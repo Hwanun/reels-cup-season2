@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>릴스컵 투표</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 2.5em;
+            font-weight: bold;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 40px;
+        }
+
+        /* 로그인 섹션 */
+        .login-section {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .login-input {
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 1em;
+            width: 100%;
+            max-width: 300px;
+            transition: border-color 0.3s ease;
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .login-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1em;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .user-info {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .user-info.show {
+            display: block;
+        }
+
+        /* 투표 섹션 */
+        .voting-section {
+            display: none;
+        }
+
+        .voting-section.show {
+            display: block;
+        }
+
+        .seats-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            gap: 20px;
+        }
+
+        .seat-counter {
+            flex: 1;
+            padding: 20px;
+            border-radius: 15px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .seat-counter.topic1 {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .seat-counter.topic2 {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .seat-number {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+
+        .seat-text {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .topics-container {
+            display: flex;
+            gap: 30px;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
+
+        .topic-card {
+            flex: 1;
+            min-width: 300px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 15px;
+            padding: 30px 20px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .topic-card:nth-child(2) {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .topic-card:hover:not(.disabled) {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .topic-card.selected {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+            border: 3px solid #fff;
+        }
+
+        .topic-card.selected::before {
+            content: "✓ 선택됨";
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .topic-card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .topic-card.disabled::after {
+            content: "정원 마감";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .topic-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .topic-description {
+            font-size: 1em;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        .vote-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 30px auto;
+            display: block;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .vote-button.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .vote-button:hover.active {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        /* 관리자 로그인 섹션 */
+        .admin-login-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 0, 0, 0.05);
+            border: 2px dashed rgba(255, 0, 0, 0.2);
+            border-radius: 15px;
+        }
+
+        .admin-login-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .admin-input {
+            padding: 8px 15px;
+            border: 2px solid #ffcccb;
+            border-radius: 20px;
+            font-size: 0.9em;
+            width: 100%;
+            max-width: 200px;
+            transition: border-color 0.3s ease;
+        }
+
+        .admin-input:focus {
+            outline: none;
+            border-color: #ff6b6b;
+        }
+
+        .admin-login-button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .admin-login-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        /* 관리자 패널 */
+        .admin-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 107, 107, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            display: none;
+            z-index: 1000;
+            min-width: 200px;
+        }
+
+        .admin-panel.show {
+            display: block;
+        }
+
+        .admin-panel h4 {
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        /* 관리자 기능 */
+        .admin-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 0, 0, 0.1);
+            border: 2px solid rgba(255, 0, 0, 0.2);
+            border-radius: 15px;
+            display: none;
+        }
+
+        .admin-section.show {
+            display: block;
+        }
+
+        .admin-button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px 0;
+            width: 100%;
+        }
+
+        .admin-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(255, 107, 107, 0.4);
+        }
+
+        .admin-logout {
+            background: linear-gradient(45deg, #999, #777);
+            font-size: 0.8em;
+            padding: 8px 15px;
+            margin-top: 10px;
+        }
+        .participants-section {
+            margin-top: 40px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            display: none;
+        }
+
+        .participants-section.show {
+            display: block;
+        }
+
+        .participants-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .participant-list {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .participant-list h4 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .participant-list.topic1 h4 {
+            color: #f5576c;
+        }
+
+        .participant-list.topic2 h4 {
+            color: #00f2fe;
+        }
+
+        .participant-item {
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+
+        .logout-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #666;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .logout-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .topics-container {
+                flex-direction: column;
+            }
+            
+            .topic-card {
+                min-width: auto;
+            }
+            
+            .seats-info {
+                flex-direction: column;
+            }
+            
+            .participants-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .logo {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="logout-button" onclick="logout()" style="display: none;" id="logoutBtn">로그아웃</button>
+        
+        <div class="logo">🎬 릴스컵</div>
+        <div class="subtitle">어떤 주제가 더 흥미로우신가요? 선택해주세요!</div>
+        
+        <!-- 로그인 섹션 -->
+        <div class="login-section" id="loginSection">
+            <h3 style="margin-bottom: 20px; color: #333;">참가자 정보 입력</h3>
+            <div class="login-form">
+                <input type="text" class="login-input" id="userName" placeholder="이름을 입력해주세요" maxlength="20">
+                <button class="login-button" onclick="login()">참여하기</button>
+            </div>
+            
+            <!-- 관리자 로그인 -->
+            <div class="admin-login-section">
+                <h4 style="margin-bottom: 15px; color: #ff6b6b; font-size: 0.9em;">🔧 관리자 로그인</h4>
+                <div class="admin-login-form">
+                    <input type="text" class="admin-input" id="adminId" placeholder="관리자 ID" maxlength="20">
+                    <input type="password" class="admin-input" id="adminPassword" placeholder="비밀번호" maxlength="20">
+                    <button class="admin-login-button" onclick="adminLogin()">관리자 로그인</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 사용자 정보 -->
+        <div class="user-info" id="userInfo">
+            <strong id="welcomeMessage"></strong>
+        </div>
+        
+        <!-- 투표 섹션 -->
+        <div class="voting-section" id="votingSection">
+            <!-- 남은 자리 정보 -->
+            <div class="seats-info">
+                <div class="seat-counter topic1">
+                    <div class="seat-number" id="seats1">최대 20명</div>
+                    <div class="seat-text" id="seatText1">(20자리 남음)</div>
+                </div>
+                <div class="seat-counter topic2">
+                    <div class="seat-number" id="seats2">최대 20명</div>
+                    <div class="seat-text" id="seatText2">(20자리 남음)</div>
+                </div>
+            </div>
+            
+            <div class="topics-container">
+                <div class="topic-card" onclick="selectTopic(1)" id="topic1Card">
+                    <div class="topic-title">주제 A</div>
+                    <div class="topic-description">몰입의방 구매전환 릴스 만들기</div>
+                </div>
+                
+                <div class="topic-card" onclick="selectTopic(2)" id="topic2Card">
+                    <div class="topic-title">주제 B</div>
+                    <div class="topic-description">아카데미 원데이 부트캠프 전환 릴스 만들기</div>
+                </div>
+            </div>
+            
+            <button class="vote-button" onclick="submitVote()" id="voteButton">투표하기</button>
+        </div>
+
+        <!-- 관리자 패널 -->
+        <div class="admin-panel" id="adminPanel">
+            <h4>🔧 관리자 패널</h4>
+            <button class="admin-button" onclick="resetVotes()">투표 초기화</button>
+            <button class="admin-button" onclick="toggleParticipants()">데이터 명단 보기</button>
+            <button class="admin-button admin-logout" onclick="adminLogout()">관리자 로그아웃</button>
+        </div>
+
+        <!-- 관리자 기능 -->
+        <div class="admin-section" id="adminSection" style="display: none;">
+        </div>
+
+        <!-- 참가자 목록 -->
+        <div class="participants-section" id="participantsSection">
+            <h3 style="color: #333; margin-bottom: 20px;">참가자 현황</h3>
+            <div class="participants-grid">
+                <div class="participant-list topic1">
+                    <h4>주제 A 참가자 (<span id="topic1Count">0</span>/20)</h4>
+                    <div id="topic1Participants"></div>
+                </div>
+                <div class="participant-list topic2">
+                    <h4>주제 B 참가자 (<span id="topic2Count">0</span>/20)</h4>
+                    <div id="topic2Participants"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Firebase 설정 (실제 사용시 본인의 Firebase 설정으로 교체)
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+        import { getDatabase, ref, set, push, onValue, get } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js';
+
+        // Firebase 설정 (데모용 - 실제 사용시 본인의 설정 사용)
+        const firebaseConfig = {
+  apiKey: "AIzaSyDtx5rtc3gKxAOo_jDyycXv_UOgAFCnceY",
+  authDomain: "reels-cup-season2.firebaseapp.com",
+  databaseURL: "https://reels-cup-season2-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "reels-cup-season2",
+  storageBucket: "reels-cup-season2.firebasestorage.app",
+  messagingSenderId: "436473281293",
+  appId: "1:436473281293:web:505810c6a16a53325f8e44"
+};
+
+        // Firebase 연결 시뮬레이션을 위한 로컬 데이터
+        let localData = {
+            participants: {},
+            votes: { topic1: 0, topic2: 0 },
+            maxSeats: 20
+        };
+
+        // 전역 변수
+        window.selectedTopic = 0;
+        window.currentUser = null;
+        window.hasVoted = false;
+        window.isAdminLoggedIn = false;
+
+        // 로컬 스토리지에서 데이터 로드
+        function loadLocalData() {
+            const saved = localStorage.getItem('reelsCupData');
+            if (saved) {
+                localData = JSON.parse(saved);
+            }
+            updateUI();
+        }
+
+        // 로컬 스토리지에 데이터 저장
+        function saveLocalData() {
+            localStorage.setItem('reelsCupData', JSON.stringify(localData));
+        }
+
+        // UI 업데이트
+        function updateUI() {
+            // 남은 자리 업데이트
+            const remainingSeats1 = localData.maxSeats - localData.votes.topic1;
+            const remainingSeats2 = localData.maxSeats - localData.votes.topic2;
+            
+            document.getElementById('seats1').textContent = `최대 ${localData.maxSeats}명`;
+            document.getElementById('seats2').textContent = `최대 ${localData.maxSeats}명`;
+            
+            document.getElementById('seatText1').textContent = `(${remainingSeats1}자리 남음)`;
+            document.getElementById('seatText2').textContent = `(${remainingSeats2}자리 남음)`;
+
+            // 정원 마감 처리
+            if (remainingSeats1 <= 0) {
+                document.getElementById('topic1Card').classList.add('disabled');
+                document.getElementById('seatText1').textContent = '(마감)';
+            } else {
+                document.getElementById('topic1Card').classList.remove('disabled');
+            }
+
+            if (remainingSeats2 <= 0) {
+                document.getElementById('topic2Card').classList.add('disabled');
+                document.getElementById('seatText2').textContent = '(마감)';
+            } else {
+                document.getElementById('topic2Card').classList.remove('disabled');
+            }
+
+            // 참가자 목록 업데이트
+            updateParticipantsList();
+        }
+
+        // 참가자 목록 업데이트
+        function updateParticipantsList() {
+            const topic1List = document.getElementById('topic1Participants');
+            const topic2List = document.getElementById('topic2Participants');
+            
+            topic1List.innerHTML = '';
+            topic2List.innerHTML = '';
+
+            let topic1Count = 0;
+            let topic2Count = 0;
+
+            Object.values(localData.participants).forEach(participant => {
+                const participantDiv = document.createElement('div');
+                participantDiv.className = 'participant-item';
+                participantDiv.textContent = participant.name;
+
+                if (participant.vote === 1) {
+                    topic1List.appendChild(participantDiv);
+                    topic1Count++;
+                } else if (participant.vote === 2) {
+                    topic2List.appendChild(participantDiv);
+                    topic2Count++;
+                }
+            });
+
+            document.getElementById('topic1Count').textContent = topic1Count;
+            document.getElementById('topic2Count').textContent = topic2Count;
+        }
+
+        // 관리자 로그인
+        window.adminLogin = function() {
+            const adminId = document.getElementById('adminId').value.trim();
+            const adminPassword = document.getElementById('adminPassword').value.trim();
+            
+            if (adminId === 'admin' && adminPassword === 'admin4321') {
+                window.isAdminLoggedIn = true;
+                document.getElementById('adminPanel').classList.add('show');
+                
+                // 입력 필드 초기화
+                document.getElementById('adminId').value = '';
+                document.getElementById('adminPassword').value = '';
+                
+                alert('관리자로 로그인했습니다! 🔧');
+            } else {
+                alert('관리자 ID 또는 비밀번호가 잘못되었습니다.');
+            }
+        };
+
+        // 관리자 로그아웃
+        window.adminLogout = function() {
+            if (confirm('관리자 로그아웃 하시겠습니까?')) {
+                window.isAdminLoggedIn = false;
+                document.getElementById('adminPanel').classList.remove('show');
+                
+                // 참가자 목록 숨기기
+                document.getElementById('participantsSection').classList.remove('show');
+                document.getElementById('participantsSection').style.display = 'none';
+                
+                // 관리자 버튼 텍스트 초기화
+                const toggleBtn = document.querySelector('.admin-panel .admin-button:nth-child(2)');
+                if (toggleBtn) {
+                    toggleBtn.textContent = '데이터 명단 보기';
+                }
+                
+                alert('관리자 로그아웃되었습니다.');
+            }
+        };
+        window.login = function() {
+            const userName = document.getElementById('userName').value.trim();
+            if (!userName) {
+                alert('이름을 입력해주세요!');
+                return;
+            }
+
+            // 관리자 체크
+            const isAdmin = userName.toLowerCase() === 'admin' || userName.toLowerCase() === '관리자';
+
+            // 일반 사용자 중복 이름 체크 (관리자는 제외)
+            if (!isAdmin) {
+                const existingUser = Object.values(localData.participants).find(p => p.name === userName);
+                if (existingUser) {
+                    alert('이미 참여한 이름입니다. 다른 이름을 사용해주세요.');
+                    return;
+                }
+            }
+
+            window.currentUser = {
+                name: userName,
+                id: Date.now().toString(),
+                isAdmin: isAdmin
+            };
+
+            // UI 업데이트
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('userInfo').classList.add('show');
+            
+            if (isAdmin) {
+                document.getElementById('welcomeMessage').textContent = `관리자로 로그인했습니다, ${userName}님! 🔧`;
+                document.getElementById('adminSection').classList.add('show');
+            } else {
+                document.getElementById('welcomeMessage').textContent = `환영합니다, ${userName}님! 🎉`;
+            }
+            
+            document.getElementById('votingSection').classList.add('show');
+            document.getElementById('logoutBtn').style.display = 'block';
+
+            updateUI();
+        };
+
+        // 주제 선택
+        window.selectTopic = function(topicNumber) {
+            if (window.hasVoted) return;
+            
+            // 정원 체크
+            if (topicNumber === 1 && localData.votes.topic1 >= localData.maxSeats) {
+                alert('주제 A는 정원이 마감되었습니다.');
+                return;
+            }
+            if (topicNumber === 2 && localData.votes.topic2 >= localData.maxSeats) {
+                alert('주제 B는 정원이 마감되었습니다.');
+                return;
+            }
+            
+            // 이전 선택 제거
+            document.querySelectorAll('.topic-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // 새로운 선택 추가
+            if (topicNumber === 1) {
+                document.getElementById('topic1Card').classList.add('selected');
+            } else {
+                document.getElementById('topic2Card').classList.add('selected');
+            }
+            
+            window.selectedTopic = topicNumber;
+            
+            // 투표 버튼 활성화
+            document.getElementById('voteButton').classList.add('active');
+        };
+
+        // 투표 제출
+        window.submitVote = function() {
+            if (window.selectedTopic === 0 || window.hasVoted || !window.currentUser) return;
+            
+            // 정원 재체크
+            if (window.selectedTopic === 1 && localData.votes.topic1 >= localData.maxSeats) {
+                alert('주제 A는 정원이 마감되었습니다.');
+                return;
+            }
+            if (window.selectedTopic === 2 && localData.votes.topic2 >= localData.maxSeats) {
+                alert('주제 B는 정원이 마감되었습니다.');
+                return;
+            }
+
+            // 투표 데이터 저장
+            localData.participants[window.currentUser.id] = {
+                name: window.currentUser.name,
+                vote: window.selectedTopic,
+                timestamp: Date.now()
+            };
+
+            if (window.selectedTopic === 1) {
+                localData.votes.topic1++;
+            } else {
+                localData.votes.topic2++;
+            }
+
+            window.hasVoted = true;
+            saveLocalData();
+            
+            // UI 업데이트
+            updateUI();
+            
+            // 투표 완료 처리
+            document.querySelectorAll('.topic-card').forEach(card => {
+                card.style.opacity = '0.7';
+                card.style.pointerEvents = 'none';
+            });
+            
+            document.getElementById('voteButton').style.display = 'none';
+            
+            const topicName = window.selectedTopic === 1 ? 'A' : 'B';
+            alert(`주제 ${topicName}에 투표가 완료되었습니다! 감사합니다 🎉`);
+        };
+
+        // 관리자 기능들
+        window.resetVotes = function() {
+            if (!window.isAdminLoggedIn) {
+                alert('관리자만 사용할 수 있는 기능입니다.');
+                return;
+            }
+            
+            if (confirm('정말로 모든 투표를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                localData = {
+                    participants: {},
+                    votes: { topic1: 0, topic2: 0 },
+                    maxSeats: 20
+                };
+                saveLocalData();
+                updateUI();
+                alert('투표가 초기화되었습니다.');
+            }
+        };
+
+        window.toggleParticipants = function() {
+            if (!window.isAdminLoggedIn) {
+                alert('관리자만 사용할 수 있는 기능입니다.');
+                return;
+            }
+            
+            const participantsSection = document.getElementById('participantsSection');
+            const toggleBtn = event.target;
+            
+            if (participantsSection.style.display === 'none' || !participantsSection.classList.contains('show')) {
+                participantsSection.classList.add('show');
+                participantsSection.style.display = 'block';
+                toggleBtn.textContent = '데이터 명단 숨기기';
+            } else {
+                participantsSection.classList.remove('show');
+                participantsSection.style.display = 'none';
+                toggleBtn.textContent = '데이터 명단 보기';
+            }
+        };
+
+        // 로그아웃
+        window.logout = function() {
+            if (confirm('로그아웃 하시겠습니까?')) {
+                window.currentUser = null;
+                window.hasVoted = false;
+                window.selectedTopic = 0;
+                
+                document.getElementById('loginSection').style.display = 'block';
+                document.getElementById('userInfo').classList.remove('show');
+                document.getElementById('votingSection').classList.remove('show');
+                document.getElementById('participantsSection').classList.remove('show');
+                document.getElementById('adminSection').classList.remove('show');
+                document.getElementById('logoutBtn').style.display = 'none';
+                document.getElementById('userName').value = '';
+                
+                // 선택 상태 초기화
+                document.querySelectorAll('.topic-card').forEach(card => {
+                    card.classList.remove('selected');
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = 'auto';
+                });
+                
+                document.getElementById('voteButton').classList.remove('active');
+                document.getElementById('voteButton').style.display = 'block';
+                
+                // 관리자 버튼 텍스트 초기화
+                const toggleBtn = document.querySelector('.admin-button:last-child');
+                if (toggleBtn) {
+                    toggleBtn.textContent = '참가자 목록 보기';
+                }
+            }
+        };
+
+        // 페이지 로드시 데이터 로드
+        loadLocalData();
+
+        // 주기적으로 UI 업데이트 (다른 사용자의 투표 반영)
+        setInterval(updateUI, 2000);
+    </script>
+</body>
+</html>
