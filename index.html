@@ -366,6 +366,14 @@
            	margin-top: 10px;
         }
         
+            /* 참가자 현황은 관리자 전용 */
+        .participants-section {
+            display: none;
+        }
+        .participants-section.show {
+            display: block;
+        }
+
         @media (max-width: 768px) {
             .topics-container {
                 flex-direction: column;
