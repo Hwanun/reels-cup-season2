@@ -427,12 +427,12 @@
         <div class="voting-section" id="votingSection">
             <div class="seats-info">
                 <div class="seat-counter topic1">
-                    <div class="seat-number" id="seats1">최대 20명</div>
-                    <div class="seat-text" id="seatText1">(20자리 남음)</div>
+                    <div class="seat-number" id="seats1">최대 26명</div>
+                    <div class="seat-text" id="seatText1">(26자리 남음)</div>
                 </div>
                 <div class="seat-counter topic2">
-                    <div class="seat-number" id="seats2">최대 20명</div>
-                    <div class="seat-text" id="seatText2">(20자리 남음)</div>
+                    <div class="seat-number" id="seats2">최대 26명</div>
+                    <div class="seat-text" id="seatText2">(26자리 남음)</div>
                 </div>
             </div>
 
@@ -505,7 +505,7 @@ const firebaseConfig = {
         const participantsRef = ref(db, 'participants');
 
         // 최대 정원
-        const maxSeats = 20;
+        const maxSeats = 26;
 
         // 전역 상태
         window.selectedTopic = 0;
