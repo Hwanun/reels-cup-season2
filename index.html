@@ -285,7 +285,7 @@
         <div id="videosContainer" class="videos-grid"></div>
 
         <div class="submit-section">
-            <button id="submitButton" class="submit-button" onclick="submitVotes()" disabled>
+            <button id="submitButton" class="submit-button" disabled>
                 투표 제출하기 (0/5)
             </button>
         </div>
@@ -642,6 +642,11 @@
 
         // Initialize ranking on load
         updateRanking();
+
+window.addEventListener('load', () => {
+const submitBtn = document.getElementById('submitButton');
+submitBtn.addEventListener('click', submitVotes);
++ });
 
         // Allow Enter key to login
         document.getElementById('nameInput').addEventListener('keypress', (e) => {
