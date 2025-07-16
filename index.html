@@ -423,29 +423,43 @@
         });
 
         // 화면 렌더링 함수
-        function renderReels(reelsArray) {
-            const grid = document.getElementById('reelsGrid');
-            reelsArray.sort((a, b) => a.id - b.id);
+function renderReels(reelsArray) {
+    const grid = document.getElementById('reelsGrid');
+    reelsArray.sort((a, b) => a.id - b.id);
+    
+    grid.innerHTML = reelsArray.map((reel) => `
+        <div class="reel-card ${userVotes.has(reel.id) ? 'selected' : ''}" id="card-${reel.id}">
+            <div class="reel-number">릴스 #${reel.id}</div>
             
-            grid.innerHTML = reelsArray.map((reel) => `
-                <div class="reel-card ${userVotes.has(reel.id) ? 'selected' : ''}" id="card-${reel.id}">
-                    <div class="reel-number">릴스 #${reel.id}</div>
-                    <iframe class="reel-video" src="https://www.youtube.com/embed/${reel.videoId}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-                    <div class="caption-section">
-                        <div class="reel-caption" id="caption-${reel.id}">${reel.caption}</div>
-                        <div class="caption-edit" id="edit-${reel.id}"><input type="text" id="input-${reel.id}" value="${reel.caption}"></div>
-                        <div class="caption-buttons">
-                            <button class="edit-btn" id="edit-btn-${reel.id}" onclick="editCaption(${reel.id})">수정</button>
-                            <button class="save-btn" id="save-btn-${reel.id}" onclick="saveCaption(${reel.id})" style="display: none;">저장</button>
-                            <button class="cancel-btn" id="cancel-btn-${reel.id}" onclick="cancelEdit(${reel.id}, '${reel.caption}')" style="display: none;">취소</button>
-                        </div>
-                    </div>
-                    <button class="vote-btn ${userVotes.has(reel.id) ? 'voted' : ''}" onclick="toggleVote(${reel.id})" ${userVotes.size >= MAX_VOTES && !userVotes.has(reel.id) ? 'disabled' : ''}>
-                        ${userVotes.has(reel.id) ? '✓ 투표 완료' : '👍 투표하기'}
-                    </button>
+            <iframe 
+                class="reel-video" 
+                src="https://www.youtube.com/embed/${reel.videoId}" 
+                title="YouTube video player" 
+                frameborder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                referrerpolicy="strict-origin-when-cross-origin" 
+                allowfullscreen>
+            </iframe>
+
+            <div class="caption-section">
+                <div class="reel-caption" id="caption-${reel.id}">${reel.caption}</div>
+                
+                <div class="caption-edit" id="edit-${reel.id}">
+                    <input type="text" id="input-${reel.id}" value="${reel.caption}" onkeypress="if(event.key === 'Enter') saveCaption(${reel.id})">
                 </div>
-            `).join('');
-        }
+
+                <div class="caption-buttons">
+                    <button class="edit-btn" id="edit-btn-${reel.id}" onclick="editCaption(${reel.id})">수정</button>
+                    <button class="save-btn" id="save-btn-${reel.id}" onclick="saveCaption(${reel.id})" style="display: none;">저장</button>
+                    <button class="cancel-btn" id="cancel-btn-${reel.id}" onclick="cancelEdit(${reel.id}, '${reel.caption}')" style="display: none;">취소</button>
+                </div>
+            </div>
+            <button class="vote-btn ${userVotes.has(reel.id) ? 'voted' : ''}" onclick="toggleVote(${reel.id})" ${userVotes.size >= MAX_VOTES && !userVotes.has(reel.id) ? 'disabled' : ''}>
+                ${userVotes.has(reel.id) ? '✓ 투표 완료' : '👍 투표하기'}
+            </button>
+        </div>
+    `).join('');
+}
         
         // 투표 처리 함수 (Transaction 사용)
         function toggleVote(reelId) {
