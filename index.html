@@ -54,7 +54,7 @@
       width:100%; padding:12px; background:linear-gradient(135deg,#667eea,#764ba2);
       color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:1em; font-weight:bold
     }
-    .vote-btn.voted { background:linear-gradient(135deg,#4CAF50,#45a049) }
+    .vote-btn.selected { background:linear-gradient(135deg,#4CAF50,#45a049) }
     .vote-btn:disabled { background:#ccc; cursor:not-allowed }
     .results-section { margin-top:30px }
     .results-section h2 {
@@ -79,6 +79,8 @@
     .admin-btn { background:#764ba2 }
     .admin-btn.danger { background:#dc3545 }
     .admin-btn:hover { opacity:.9 }
+    .save-section { text-align:center; margin-top:20px }
+    .status-text { margin-left:12px; font-size:.9em; color:#333 }
   </style>
 </head>
 <body>
@@ -92,6 +94,7 @@
     </div>
   </div>
 
+  <!-- 메인 컨테이너 -->
   <div class="container" id="appContainer" style="display:none;">
     <div class="header">
       <h1>🏆 릴스컵 투표 시스템</h1>
@@ -99,7 +102,7 @@
     </div>
 
     <div class="vote-counter">
-      <span id="voteCount">0</span> / 5 투표 완료
+      <span id="voteCount">0</span> / 5 선택 완료
     </div>
 
     <div class="admin-controls">
@@ -110,6 +113,11 @@
     </div>
 
     <div class="reels-grid" id="reelsGrid"></div>
+
+    <div class="save-section">
+      <button id="saveVotesBtn" class="login-btn">선택한 투표 저장</button>
+      <span id="saveStatus" class="status-text"></span>
+    </div>
 
     <div class="results-section">
       <h2>📊 실시간 투표 결과</h2>
@@ -133,9 +141,8 @@
     </div>
   </div>
 
-  <!-- 전체 JS를 모듈로 묶고, Database 모듈 임포트 & db 정의 -->
+  <!-- Firebase & 로직 -->
   <script type="module">
-    // Firebase App + Database 모듈 임포트
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
     import {
       getDatabase,
@@ -145,7 +152,7 @@
       runTransaction
     } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
-    // Firebase 설정 (원본 그대로)
+    // Firebase 설정
     const firebaseConfig = {
       apiKey: "AIzaSyBmxLEvOtqHqSyAUXtdYWlywvP1wgsQ_yk",
       authDomain: "reels-8708b.firebaseapp.com",
@@ -154,12 +161,10 @@
       messagingSenderId: "614276576588",
       appId: "1:614276576588:web:1fab02cbc30615e69f0be9"
     };
-
-    // Firebase 초기화 및 Database 인스턴스 생성
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    // 기존 reelsData, votes, userVotes, currentUser, isAdmin 선언부
+    // 데이터 정의
     const reelsData = [
       { id:1, url:'https://www.youtube.com/embed/-8dDe_EbKEk', nickname:'호롤롤로', caption:'첫 번째 릴스\n줄넘김 테스트' },
       { id:2, url:'https://www.youtube.com/embed/yahAVfaT5zs', nickname:'핑핑', caption:'두 번째 릴스\n줄넘김 테스트' },
@@ -177,126 +182,125 @@
       { id:14,url:'https://www.youtube.com/embed/_qCY3j2RLgs', nickname:'떡순이', caption:'열네 번째 릴스\n줄넘김 테스트' },
       { id:15,url:'https://www.youtube.com/embed/RyVTjCFWHlU', nickname:'쥬라기', caption:'열다섯 번째 릴스\n줄넘김 테스트' }
     ];
-    let votes = {}, userVotes = new Set(), currentUser = null, isAdmin=false;
+    let votes = {}, userVotes = new Set(), currentUser = null, isAdmin = false;
     const MAX_VOTES=5, ADMIN_ID='admin', ADMIN_PW='4321';
     reelsData.forEach(r=>votes[r.id]=0);
+
+    // DOM 참조
+    const userLoginModal = document.getElementById('userLoginModal');
+    const appContainer    = document.getElementById('appContainer');
+    const reelsGrid       = document.getElementById('reelsGrid');
+    const voteCount       = document.getElementById('voteCount');
+    const saveBtn         = document.getElementById('saveVotesBtn');
+    const saveStatus      = document.getElementById('saveStatus');
+    const resultsContainer= document.getElementById('resultsContainer');
 
     // 사용자 로그인
     document.getElementById('userLoginBtn').onclick = () => {
       const name = document.getElementById('userName').value.trim();
       if (!name) return alert('이름을 입력해주세요.');
-      currentUser=name;
-      document.getElementById('userLoginModal').style.display='none';
-      document.getElementById('appContainer').style.display='block';
+      currentUser = name;
+      userLoginModal.style.display='none';
+      appContainer.style.display='block';
       subscribeRealtime();
       renderReels();
-      updateResults();
     };
 
     // Firebase 구독
     function subscribeRealtime() {
-      reelsData.forEach(r=>{
-        onValue(ref(db, `captions/${r.id}`), snap=>{
-          if (snap.exists()) r.caption=snap.val();
-          const el=document.getElementById(`caption-${r.id}`);
-          if (el) el.textContent=r.caption;
+      // 캡션·투표 수 실시간 반영
+      reelsData.forEach(r => {
+        onValue(ref(db, `captions/${r.id}`), snap => {
+          if (snap.exists()) r.caption = snap.val();
+          const el = document.getElementById(`caption-${r.id}`);
+          if (el) el.textContent = r.caption;
         });
-        onValue(ref(db, `votes/${r.id}`), snap=>{
-          votes[r.id]=snap.val()||0;
+        onValue(ref(db, `votes/${r.id}`), snap => {
+          votes[r.id] = snap.val()||0;
           updateResults();
         });
       });
-      onValue(ref(db, `userVotes/${currentUser}`), snap=>{
-        userVotes.clear();
-        const data=snap.val()||{};
-        Object.entries(data).forEach(([k,v])=>{ if (v) userVotes.add(Number(k)); });
-        renderReels();
-        updateResults();
-      });
+      // 초기 상태 반영
+      updateResults();
     }
 
     // 렌더링
     function renderReels() {
-      const grid=document.getElementById('reelsGrid');
-      grid.innerHTML=reelsData.map(r=>`
-        <div class="reel-card ${userVotes.has(r.id)?'selected':''}" id="card-${r.id}"> 
+      reelsGrid.innerHTML = reelsData.map(r=>`
+        <div class="reel-card" id="card-${r.id}">
           <div class="reel-nickname">${r.nickname}</div>
           <iframe class="reel-video" src="${r.url}" allowfullscreen></iframe>
           <div class="caption-section">
             <div class="reel-caption" id="caption-${r.id}">${r.caption}</div>
-            <div class="caption-edit" id="edit-${r.id}" style="display:none;">
-              <textarea id="input-${r.id}">${r.caption}</textarea>
-            </div>
-            <div class="caption-buttons">
-              <button class="edit-btn" onclick="editCaption(${r.id})">수정</button>
-              <button class="save-btn" onclick="saveCaption(${r.id})" style="display:none;">저장</button>
-              <button class="cancel-btn" onclick="cancelEdit(${r.id})" style="display:none;">취소</button>
-            </div>
           </div>
-          <button class="vote-btn ${userVotes.has(r.id)?'voted':''}"
-                  onclick="toggleVote(${r.id})"
-                  ${userVotes.size>=MAX_VOTES&&!userVotes.has(r.id)?'disabled':''}>
-            ${userVotes.has(r.id)?'✓ 투표 완료':'👍 투표하기'}
+          <button class="vote-btn ${userVotes.has(r.id)?'selected':''}"
+                  onclick="toggleSelect(${r.id})">
+            ${userVotes.has(r.id)?'✓ 선택됨':'👍 선택'}
           </button>
         </div>
       `).join('');
-      document.getElementById('voteCount').textContent=userVotes.size;
+      voteCount.textContent = userVotes.size;
     }
 
-    // 캡션 편집
-    function editCaption(id){
-      document.getElementById(`caption-${id}`).style.display='none';
-      document.getElementById(`edit-${id}`).style.display='block';
-      const b=document.querySelectorAll(`#card-${id} .caption-buttons button`);
-      b[0].style.display='none'; b[1].style.display='inline-block'; b[2].style.display='inline-block';
-    }
-    function saveCaption(id){
-      const txt=document.getElementById(`input-${id}`).value.trim();
-      if(!txt) return alert('캡션을 입력해주세요.');
-      set(ref(db, `captions/${id}`),txt).then(()=>{
-        document.getElementById(`caption-${id}`).textContent=txt;
-        cancelEdit(id);
-      });
-    }
-    function cancelEdit(id){
-      document.getElementById(`edit-${id}`).style.display='none';
-      document.getElementById(`caption-${id}`).style.display='block';
-      const b=document.querySelectorAll(`#card-${id} .caption-buttons button`);
-      b[0].style.display='inline-block'; b[1].style.display='none'; b[2].style.display='none';
-    }
-
-    // 투표
-    function toggleVote(id){
-      const path=ref(db, `userVotes/${currentUser}/${id}`);
-      if(userVotes.has(id)){
-        set(path,false);
-        runTransaction(ref(db, `votes/${id}`),v=> (v||0)-1);
+    // 선택 토글 (저장 전)
+    window.toggleSelect = id => {
+      if (userVotes.has(id)) {
         userVotes.delete(id);
       } else {
-        if(userVotes.size>=MAX_VOTES) return alert('최대 5표까지만 투표할 수 있습니다.');
-        set(path,true);
-        runTransaction(ref(db, `votes/${id}`),v=> (v||0)+1);
+        if (userVotes.size >= MAX_VOTES) {
+          return alert(`최대 ${MAX_VOTES}개까지만 선택할 수 있습니다.`);
+        }
         userVotes.add(id);
       }
       renderReels();
-      updateResults();
+    };
+
+    // 저장 버튼
+    saveBtn.onclick = () => {
+      if (!currentUser) return;
+      saveBtn.disabled = true;
+      saveStatus.textContent = '저장 중…';
+
+      // payload 생성
+      const payload = {};
+      userVotes.forEach(id => payload[id] = true);
+
+      // userVotes 저장
+      set(ref(db, `userVotes/${currentUser}`), payload)
+        .then(() => {
+          // 투표 수반영
+          userVotes.forEach(id => {
+            runTransaction(ref(db, `votes/${id}`), v => (v||0)+1);
+          });
+          saveStatus.textContent = '저장 완료!';
+        })
+        .catch(err => {
+          saveStatus.textContent = '저장 실패: ' + err.message;
+        })
+        .finally(() => {
+          saveBtn.disabled = false;
+          setTimeout(() => saveStatus.textContent = '', 3000);
+        });
+    };
+
+    // 실시간 결과 업데이트
+    function updateResults() {
+      const sorted = reelsData.map(r=>({ ...r, votes: votes[r.id]||0 }))
+                              .sort((a,b)=>b.votes - a.votes);
+      if (sorted.length === 0) {
+        resultsContainer.innerHTML = '<p>아직 투표가 없습니다.</p>';
+      } else {
+        resultsContainer.innerHTML = sorted.map((r,i)=>`
+          <div class="result-item">
+            <span class="result-rank">${i+1}위</span>
+            <span class="result-info">${r.nickname}</span>
+            <span class="result-votes">${r.votes}표</span>
+          </div>
+        `).join('');
+      }
     }
 
-    // 결과 업데이트
-    function updateResults(){
-      const c=document.getElementById('resultsContainer');
-      const sorted=reelsData.map(r=>({...r,votes:votes[r.id]||0})).sort((a,b)=>b.votes-a.votes);
-      if(!sorted.length) return c.innerHTML='<p>아직 투표가 없습니다.</p>';
-      c.innerHTML=sorted.map((r,i)=>`
-        <div class="result-item">
-          <span class="result-rank">${i+1}위</span>
-          <span class="result-info">${r.nickname}</span>
-          <span class="result-votes">${r.votes}표</span>
-        </div>
-      `).join('');
-    }
-
-    // 관리자
+    // 관리자 기능 (기존 그대로)
     document.getElementById('adminLoginBtn').onclick=()=>{
       const id=document.getElementById('adminId').value;
       const pw=document.getElementById('adminPw').value;
@@ -311,33 +315,26 @@
     document.getElementById('adminCancelBtn').onclick=()=>{
       document.getElementById('adminLoginModal').style.display='none';
     };
-    function showAdminLogin(){ if(!isAdmin) document.getElementById('adminLoginModal').style.display='flex'; }
-    function logoutAdmin(){
+    window.showAdminLogin = ()=>{ if(!isAdmin) document.getElementById('adminLoginModal').style.display='flex'; }
+    window.logoutAdmin = ()=>{
       isAdmin=false;
       document.getElementById('clearVotesBtn').style.display='none';
       document.getElementById('logoutAdminBtn').style.display='none';
       alert('관리자 로그아웃');
-    }
-    function clearAllVotes(){
+    };
+    window.clearAllVotes = ()=>{
       if(!isAdmin) return alert('관리자만 가능합니다.');
       reelsData.forEach(r=>{
         set(ref(db, `votes/${r.id}`),0);
         set(ref(db, `captions/${r.id}`),r.caption);
       });
-      set(ref(db, `userVotes/${currentUser}`),null);
+      set(ref(db, `userVotes`), null);
       alert('초기화 완료');
-    }
+    };
 
-    // 전역 노출
-    window.renderReels=renderReels;
-    window.toggleVote=toggleVote;
-    window.editCaption=editCaption;
-    window.saveCaption=saveCaption;
-    window.cancelEdit=cancelEdit;
-    window.showFinalResults=showFinalResults;
-    window.showAdminLogin=showAdminLogin;
-    window.logoutAdmin=logoutAdmin;
-    window.clearAllVotes=clearAllVotes;
+    // 전역에 노출
+    window.renderReels = renderReels;
+    window.showFinalResults = ()=>{ document.getElementById('finalResults').style.display='block'; };
   </script>
 </body>
 </html>
