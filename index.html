@@ -133,7 +133,7 @@
 
         .video-placeholder {
             width: 100%;
-            height: 400px;  /* 250px → 400px로 증가 (숏츠 비율) */
+            height: 400px;
             border-radius: 10px;
             overflow: hidden;
             position: relative;
@@ -513,7 +513,6 @@
             font-size: 1.1em;
         }
 
-        /* 관리자 스타일 */
         .admin-login-form {
             background: linear-gradient(135deg, #667eea, #764ba2);
             padding: 40px;
@@ -905,41 +904,14 @@
         </div>
     </div>
 
-    <!-- Firebase SDK (초심플 버전) -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getFirestore, collection, doc, setDoc, getDocs, onSnapshot, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-
-        // 🔥 Firebase 구성 (실제 연동!)
-        const firebaseConfig = {
-            apiKey: "AIzaSyA0B8G1jHsnLkwZC4flHWKM0-6lzdU073E",
-            authDomain: "reels-cup2.firebaseapp.com",
-            databaseURL: "https://reels-cup2-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "reels-cup2",
-            storageBucket: "reels-cup2.firebasestorage.app",
-            messagingSenderId: "139476452384",
-            appId: "1:139476452384:web:cc36950a9096df7113e845"
-        };
-
-        // Firebase 초기화
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // 전역으로 Firebase 노출 (초심플!)
-        window.db = db;
-        window.firestore = { collection, doc, setDoc, getDocs, onSnapshot, deleteDoc };
-        window.firebaseReady = true;
-        
-        console.log('🔥 Firebase 초기화 완료');
-    </script>
-
     <script>
-        // 전역 변수
+        // 🎯 전역 변수 먼저 선언
         let currentVoter = '';
         let videos = [];
         let votes = {};
         let allVotes = [];
         let isAdminLoggedIn = false;
+        let db, firestore;
 
         // 관리자 계정
         const ADMIN_CREDENTIALS = {
@@ -968,218 +940,30 @@
             { id: 17, title: '워터 현', youtubeId: 'MgKiWgyIskQ', caption: '스릴 넘치는 순간들이 있어요' }
         ];
 
-        // 🔥 Firebase 초심플 함수들
-
-        // 캡션 저장 (초심플!)
-        async function saveCaption(videoId) {
-            const newCaption = document.getElementById(`caption-input-${videoId}`).value.trim();
+        // 🎯 전역 함수들 (핵심 수정 부분!)
+        
+        // 탭 전환 함수 (전역 스코프에 정의)
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.getElementById(tabName + '-tab').classList.remove('hidden');
             
-            try {
-                // Firebase에 캡션 저장 (영상별로 하나씩, 모든 사용자 공유)
-                await window.firestore.setDoc(window.firestore.doc(window.db, 'captions', videoId.toString()), {
-                    caption: newCaption,
-                    lastUpdated: new Date().toISOString()
-                });
-
-                // 로컬에도 업데이트
-                const video = videos.find(v => v.id === videoId);
-                if (video) video.caption = newCaption;
-                
-                // 화면 업데이트
-                document.getElementById(`caption-text-${videoId}`).textContent = newCaption;
-                cancelEdit(videoId);
-                
-                showMessage('캡션이 저장되었습니다!', 'success');
-                console.log('✅ 캡션 저장:', videoId, newCaption);
-                
-            } catch (error) {
-                console.error('❌ 캡션 저장 실패:', error);
-                showMessage('캡션 저장에 실패했습니다.', 'error');
-            }
-        }
-
-        // 투표 저장 (초심플!)
-        async function submitAllVotes() {
-            const selectedCount = Object.keys(votes).length;
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             
-            if (selectedCount === 0) {
-                showMessage('최소 1개의 영상을 선택해주세요.', 'error');
-                return;
-            }
-
-            try {
-                // Firebase에 투표 저장 (사용자 이름을 키로 사용)
-                await window.firestore.setDoc(window.firestore.doc(window.db, 'votes', currentVoter), {
-                    voter: currentVoter,
-                    votes: votes,
-                    selectedCount: selectedCount,
-                    timestamp: new Date().toISOString()
-                });
-
-                showMessage(`${selectedCount}개의 영상에 투표가 완료되었습니다!`, 'success');
-                console.log('✅ 투표 저장:', currentVoter, votes);
-                
-                // 투표 완료 후 처리
-                document.getElementById('voting-section').classList.add('hidden');
-                document.querySelector('.voter-form').style.display = 'block';
-                document.getElementById('voter-name').value = '';
-                
-                // 결과 탭으로 이동
-                showTab('results');
-                
-            } catch (error) {
-                console.error('❌ 투표 저장 실패:', error);
-                showMessage('투표 저장에 실패했습니다.', 'error');
-            }
-        }
-
-        // 데이터 로드 (초심플!)
-        async function loadData() {
-            try {
-                console.log('📥 데이터 로드 시작...');
-                
-                // 캡션 로드 (모든 사용자 공유)
-                const captionsSnapshot = await window.firestore.getDocs(window.firestore.collection(window.db, 'captions'));
-                captionsSnapshot.forEach(doc => {
-                    const videoId = parseInt(doc.id);
-                    const captionData = doc.data();
-                    const video = videos.find(v => v.id === videoId);
-                    if (video) {
-                        video.caption = captionData.caption;
-                    }
-                });
-
-                // 투표 로드
-                const votesSnapshot = await window.firestore.getDocs(window.firestore.collection(window.db, 'votes'));
-                allVotes = [];
-                votesSnapshot.forEach(doc => {
-                    allVotes.push(doc.data());
-                });
-
-                console.log('✅ 데이터 로드 완료:', allVotes.length, '개 투표');
-                
-            } catch (error) {
-                console.error('❌ 데이터 로드 실패:', error);
-                showMessage('데이터 로드에 실패했습니다.', 'error');
-            }
-        }
-
-        // 실시간 리스너 (초심플!)
-        function setupRealtimeListeners() {
-            console.log('🔄 실시간 리스너 설정...');
-            
-            // 투표 실시간 업데이트
-            window.firestore.onSnapshot(window.firestore.collection(window.db, 'votes'), (snapshot) => {
-                allVotes = [];
-                snapshot.forEach(doc => allVotes.push(doc.data()));
-                updateResults();
-                if (isAdminLoggedIn) updateAdminDashboard();
-                console.log('🔄 투표 업데이트:', allVotes.length, '개');
-            });
-
-            // 캡션 실시간 업데이트 (모든 사용자에게 동일하게 보임)
-            window.firestore.onSnapshot(window.firestore.collection(window.db, 'captions'), (snapshot) => {
-                snapshot.forEach(doc => {
-                    const videoId = parseInt(doc.id);
-                    const captionData = doc.data();
-                    const video = videos.find(v => v.id === videoId);
-                    
-                    if (video && video.caption !== captionData.caption) {
-                        video.caption = captionData.caption;
-                        // 화면에 실시간 반영
-                        const captionElement = document.getElementById(`caption-text-${videoId}`);
-                        if (captionElement) {
-                            captionElement.textContent = captionData.caption;
-                        }
-                    }
-                });
-                console.log('🔄 캡션 업데이트');
-            });
-        }
-
-        // 관리자 - 투표자 삭제 (초심플!)
-        async function deleteVoter(index) {
-            if (confirm('이 투표자의 데이터를 삭제하시겠습니까?')) {
-                try {
-                    const voterName = allVotes[index].voter;
-                    await window.firestore.deleteDoc(window.firestore.doc(window.db, 'votes', voterName));
-                    showMessage(`${voterName}의 투표가 삭제되었습니다.`, 'success');
-                    console.log('✅ 투표자 삭제:', voterName);
-                } catch (error) {
-                    console.error('❌ 삭제 실패:', error);
-                    showMessage('삭제에 실패했습니다.', 'error');
+            // 해당 탭 버튼 찾아서 활성화
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach((tab, index) => {
+                if ((tabName === 'voting' && index === 0) ||
+                    (tabName === 'results' && index === 1) ||
+                    (tabName === 'admin' && index === 2)) {
+                    tab.classList.add('active');
                 }
-            }
+            });
+            
+            if (tabName === 'results') updateResults();
+            if (tabName === 'admin' && isAdminLoggedIn) updateAdminDashboard();
         }
 
-        // 관리자 - 모든 투표 삭제 (초심플!)
-        async function clearAllVotes() {
-            if (confirm('정말로 모든 투표 데이터를 삭제하시겠습니까?')) {
-                try {
-                    const votesSnapshot = await window.firestore.getDocs(window.firestore.collection(window.db, 'votes'));
-                    const deletePromises = votesSnapshot.docs.map(doc => window.firestore.deleteDoc(doc.ref));
-                    await Promise.all(deletePromises);
-                    showMessage('모든 투표 데이터가 삭제되었습니다.', 'success');
-                    console.log('✅ 전체 투표 삭제 완료');
-                } catch (error) {
-                    console.error('❌ 전체 삭제 실패:', error);
-                    showMessage('삭제에 실패했습니다.', 'error');
-                }
-            }
-        }
-
-// 🎯 전역 함수들을 먼저 정의
-
-// 탭 전환 함수 (전역 스코프에 먼저 정의)
-function showTab(tabName) {
-    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
-    document.getElementById(tabName + '-tab').classList.remove('hidden');
-    
-    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-    
-    // 해당 탭 버튼 찾아서 활성화
-    const tabs = document.querySelectorAll('.tab');
-    tabs.forEach((tab, index) => {
-        if ((tabName === 'voting' && index === 0) ||
-            (tabName === 'results' && index === 1) ||
-            (tabName === 'admin' && index === 2)) {
-            tab.classList.add('active');
-        }
-    });
-    
-    if (tabName === 'results') updateResults();
-    if (tabName === 'admin' && isAdminLoggedIn) updateAdminDashboard();
-}
-
-// 전역으로 노출
-window.showTab = showTab;
-
-
-        // 🎯 나머지 기존 함수들 (변경 없음)
-
-        async function init() {
-            console.log('🚀 앱 초기화...');
-            videos = [...sampleVideos];
-            
-            // Firebase 준비 확인
-            if (window.firebaseReady) {
-                await loadData();
-                setupRealtimeListeners();
-            } else {
-                setTimeout(init, 500);
-                return;
-            }
-            
-            generateVideoGrid();
-            updateResults();
-            
-            // 로딩 완료
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('voting-tab').classList.remove('hidden');
-            
-            console.log('🎉 초기화 완료!');
-        }
-
+        // 투표자 설정 함수
         function setVoter() {
             const name = document.getElementById('voter-name').value.trim();
             if (!name) {
@@ -1204,63 +988,7 @@ window.showTab = showTab;
             showMessage('투표를 시작합니다!', 'success');
         }
 
-        function generateVideoGrid() {
-            const grid = document.getElementById('video-grid');
-            grid.innerHTML = '';
-
-            videos.forEach(video => {
-                const card = document.createElement('div');
-                card.className = 'video-card';
-                card.innerHTML = `
-                    <div class="video-placeholder">
-                        <iframe class="youtube-embed" 
-                                src="https://www.youtube.com/embed/${video.youtubeId}" 
-                                title="${video.title}" 
-                                frameborder="0" 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                                allowfullscreen>
-                        </iframe>
-                    </div>
-                    <div class="video-info">
-                        <div class="video-title">${video.title}</div>
-                        
-                        <div class="video-caption">
-                            <div class="caption-display-mode" id="caption-display-${video.id}">
-                                <div class="caption-display" id="caption-text-${video.id}">${video.caption}</div>
-                                <div class="caption-controls">
-                                    <button class="caption-btn edit-btn" onclick="editCaption(${video.id})">
-                                        ✏️ 수정
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div class="caption-edit-mode" id="caption-edit-${video.id}">
-                                <textarea class="caption-edit-area" id="caption-input-${video.id}" 
-                                          placeholder="캡션을 입력하세요...">${video.caption}</textarea>
-                                <div class="caption-controls">
-                                    <button class="caption-btn save-btn" onclick="saveCaption(${video.id})">
-                                        💾 저장
-                                    </button>
-                                    <button class="caption-btn cancel-btn" onclick="cancelEdit(${video.id})">
-                                        ❌ 취소
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="vote-section">
-                            <label class="vote-checkbox-container" onclick="toggleVote(${video.id})">
-                                <input type="checkbox" class="vote-checkbox" id="vote-${video.id}">
-                                <span class="checkmark"></span>
-                                <span class="vote-text">이 영상에 투표하기</span>
-                            </label>
-                        </div>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-        }
-
+        // 캡션 편집 함수들
         function editCaption(videoId) {
             document.getElementById(`caption-display-${videoId}`).classList.add('editing');
             document.getElementById(`caption-edit-${videoId}`).classList.add('active');
@@ -1277,6 +1005,7 @@ window.showTab = showTab;
             }
         }
 
+        // 투표 관련 함수들
         function toggleVote(videoId) {
             const container = document.querySelector(`#vote-${videoId}`).parentElement;
             const checkbox = document.getElementById(`vote-${videoId}`);
@@ -1296,6 +1025,145 @@ window.showTab = showTab;
             }
             updateVoteCounter();
         }
+
+        // 관리자 함수들
+        function adminLogin() {
+            const inputId = document.getElementById('admin-id').value.trim();
+            const inputPassword = document.getElementById('admin-password').value.trim();
+            
+            if (inputId === ADMIN_CREDENTIALS.id && inputPassword === ADMIN_CREDENTIALS.password) {
+                isAdminLoggedIn = true;
+                document.getElementById('admin-login-section').classList.add('hidden');
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                updateAdminDashboard();
+                showMessage('관리자 로그인 성공!', 'success');
+            } else {
+                showMessage('아이디 또는 비밀번호가 잘못되었습니다.', 'error');
+            }
+        }
+
+        function adminLogout() {
+            isAdminLoggedIn = false;
+            document.getElementById('admin-login-section').classList.remove('hidden');
+            document.getElementById('admin-dashboard').classList.add('hidden');
+            document.getElementById('admin-id').value = '';
+            document.getElementById('admin-password').value = '';
+            showMessage('로그아웃되었습니다.', 'success');
+        }
+
+        // 🔥 Firebase 관련 함수들
+
+        // 캡션 저장
+        async function saveCaption(videoId) {
+            const newCaption = document.getElementById(`caption-input-${videoId}`).value.trim();
+            
+            try {
+                await firestore.setDoc(firestore.doc(db, 'captions', videoId.toString()), {
+                    caption: newCaption,
+                    lastUpdated: new Date().toISOString()
+                });
+
+                const video = videos.find(v => v.id === videoId);
+                if (video) video.caption = newCaption;
+                
+                document.getElementById(`caption-text-${videoId}`).textContent = newCaption;
+                cancelEdit(videoId);
+                
+                showMessage('캡션이 저장되었습니다!', 'success');
+                console.log('✅ 캡션 저장:', videoId, newCaption);
+                
+            } catch (error) {
+                console.error('❌ 캡션 저장 실패:', error);
+                showMessage('캡션 저장에 실패했습니다.', 'error');
+            }
+        }
+
+        // 투표 제출
+        async function submitAllVotes() {
+            const selectedCount = Object.keys(votes).length;
+            
+            if (selectedCount === 0) {
+                showMessage('최소 1개의 영상을 선택해주세요.', 'error');
+                return;
+            }
+
+            try {
+                await firestore.setDoc(firestore.doc(db, 'votes', currentVoter), {
+                    voter: currentVoter,
+                    votes: votes,
+                    selectedCount: selectedCount,
+                    timestamp: new Date().toISOString()
+                });
+
+                showMessage(`${selectedCount}개의 영상에 투표가 완료되었습니다!`, 'success');
+                console.log('✅ 투표 저장:', currentVoter, votes);
+                
+                document.getElementById('voting-section').classList.add('hidden');
+                document.querySelector('.voter-form').style.display = 'block';
+                document.getElementById('voter-name').value = '';
+                
+                showTab('results');
+                
+            } catch (error) {
+                console.error('❌ 투표 저장 실패:', error);
+                showMessage('투표 저장에 실패했습니다.', 'error');
+            }
+        }
+
+        // 관리자 - 투표자 삭제
+        async function deleteVoter(index) {
+            if (confirm('이 투표자의 데이터를 삭제하시겠습니까?')) {
+                try {
+                    const voterName = allVotes[index].voter;
+                    await firestore.deleteDoc(firestore.doc(db, 'votes', voterName));
+                    showMessage(`${voterName}의 투표가 삭제되었습니다.`, 'success');
+                    console.log('✅ 투표자 삭제:', voterName);
+                } catch (error) {
+                    console.error('❌ 삭제 실패:', error);
+                    showMessage('삭제에 실패했습니다.', 'error');
+                }
+            }
+        }
+
+        // 관리자 - 모든 투표 삭제
+        async function clearAllVotes() {
+            if (confirm('정말로 모든 투표 데이터를 삭제하시겠습니까?')) {
+                try {
+                    const votesSnapshot = await firestore.getDocs(firestore.collection(db, 'votes'));
+                    const deletePromises = votesSnapshot.docs.map(doc => firestore.deleteDoc(doc.ref));
+                    await Promise.all(deletePromises);
+                    showMessage('모든 투표 데이터가 삭제되었습니다.', 'success');
+                    console.log('✅ 전체 투표 삭제 완료');
+                } catch (error) {
+                    console.error('❌ 전체 삭제 실패:', error);
+                    showMessage('삭제에 실패했습니다.', 'error');
+                }
+            }
+        }
+
+        // 데이터 내보내기
+        function exportData() {
+            const exportData = {
+                timestamp: new Date().toISOString(),
+                totalVoters: allVotes.length,
+                votes: allVotes,
+                videoData: videos
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `vote_data_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            showMessage('데이터가 내보내기되었습니다!', 'success');
+        }
+
+        // 🎯 유틸리티 함수들
 
         function updateVoteCounter() {
             const selectedCount = Object.keys(votes).length;
@@ -1380,30 +1248,6 @@ window.showTab = showTab;
             document.getElementById('completion-rate').textContent = ((totalVotes / 50) * 100).toFixed(1) + '%';
         }
 
-        function adminLogin() {
-            const inputId = document.getElementById('admin-id').value.trim();
-            const inputPassword = document.getElementById('admin-password').value.trim();
-            
-            if (inputId === ADMIN_CREDENTIALS.id && inputPassword === ADMIN_CREDENTIALS.password) {
-                isAdminLoggedIn = true;
-                document.getElementById('admin-login-section').classList.add('hidden');
-                document.getElementById('admin-dashboard').classList.remove('hidden');
-                updateAdminDashboard();
-                showMessage('관리자 로그인 성공!', 'success');
-            } else {
-                showMessage('아이디 또는 비밀번호가 잘못되었습니다.', 'error');
-            }
-        }
-
-        function adminLogout() {
-            isAdminLoggedIn = false;
-            document.getElementById('admin-login-section').classList.remove('hidden');
-            document.getElementById('admin-dashboard').classList.add('hidden');
-            document.getElementById('admin-id').value = '';
-            document.getElementById('admin-password').value = '';
-            showMessage('로그아웃되었습니다.', 'success');
-        }
-
         function updateAdminDashboard() {
             const totalVoters = allVotes.length;
             const totalVotesCount = allVotes.reduce((sum, vote) => sum + vote.selectedCount, 0);
@@ -1450,25 +1294,61 @@ window.showTab = showTab;
             });
         }
 
-        function exportData() {
-            const exportData = {
-                timestamp: new Date().toISOString(),
-                totalVoters: allVotes.length,
-                votes: allVotes,
-                videoData: videos
-            };
-            
-            const dataStr = JSON.stringify(exportData, null, 2);
-            const dataBlob = new Blob([dataStr], {type: 'application/json'});
-            const url = URL.createObjectURL(dataBlob);
-            
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `vote_data_${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
-            
-            URL.revokeObjectURL(url);
-            showMessage('데이터가 내보내기되었습니다!', 'success');
+        function generateVideoGrid() {
+            const grid = document.getElementById('video-grid');
+            grid.innerHTML = '';
+
+            videos.forEach(video => {
+                const card = document.createElement('div');
+                card.className = 'video-card';
+                card.innerHTML = `
+                    <div class="video-placeholder">
+                        <iframe class="youtube-embed" 
+                                src="https://www.youtube.com/embed/${video.youtubeId}" 
+                                title="${video.title}" 
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="video-info">
+                        <div class="video-title">${video.title}</div>
+                        
+                        <div class="video-caption">
+                            <div class="caption-display-mode" id="caption-display-${video.id}">
+                                <div class="caption-display" id="caption-text-${video.id}">${video.caption}</div>
+                                <div class="caption-controls">
+                                    <button class="caption-btn edit-btn" onclick="editCaption(${video.id})">
+                                        ✏️ 수정
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="caption-edit-mode" id="caption-edit-${video.id}">
+                                <textarea class="caption-edit-area" id="caption-input-${video.id}" 
+                                          placeholder="캡션을 입력하세요...">${video.caption}</textarea>
+                                <div class="caption-controls">
+                                    <button class="caption-btn save-btn" onclick="saveCaption(${video.id})">
+                                        💾 저장
+                                    </button>
+                                    <button class="caption-btn cancel-btn" onclick="cancelEdit(${video.id})">
+                                        ❌ 취소
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="vote-section">
+                            <label class="vote-checkbox-container" onclick="toggleVote(${video.id})">
+                                <input type="checkbox" class="vote-checkbox" id="vote-${video.id}">
+                                <span class="checkmark"></span>
+                                <span class="vote-text">이 영상에 투표하기</span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
         }
 
         function showMessage(message, type) {
@@ -1485,8 +1365,125 @@ window.showTab = showTab;
             setTimeout(() => messageDiv.remove(), 3000);
         }
 
+        // 🔥 Firebase 및 데이터 관련 함수들
+
+        async function loadData() {
+            try {
+                console.log('📥 데이터 로드 시작...');
+                
+                const captionsSnapshot = await firestore.getDocs(firestore.collection(db, 'captions'));
+                captionsSnapshot.forEach(doc => {
+                    const videoId = parseInt(doc.id);
+                    const captionData = doc.data();
+                    const video = videos.find(v => v.id === videoId);
+                    if (video) {
+                        video.caption = captionData.caption;
+                    }
+                });
+
+                const votesSnapshot = await firestore.getDocs(firestore.collection(db, 'votes'));
+                allVotes = [];
+                votesSnapshot.forEach(doc => {
+                    allVotes.push(doc.data());
+                });
+
+                console.log('✅ 데이터 로드 완료:', allVotes.length, '개 투표');
+                
+            } catch (error) {
+                console.error('❌ 데이터 로드 실패:', error);
+                showMessage('데이터 로드에 실패했습니다.', 'error');
+            }
+        }
+
+        function setupRealtimeListeners() {
+            console.log('🔄 실시간 리스너 설정...');
+            
+            firestore.onSnapshot(firestore.collection(db, 'votes'), (snapshot) => {
+                allVotes = [];
+                snapshot.forEach(doc => allVotes.push(doc.data()));
+                updateResults();
+                if (isAdminLoggedIn) updateAdminDashboard();
+                console.log('🔄 투표 업데이트:', allVotes.length, '개');
+            });
+
+            firestore.onSnapshot(firestore.collection(db, 'captions'), (snapshot) => {
+                snapshot.forEach(doc => {
+                    const videoId = parseInt(doc.id);
+                    const captionData = doc.data();
+                    const video = videos.find(v => v.id === videoId);
+                    
+                    if (video && video.caption !== captionData.caption) {
+                        video.caption = captionData.caption;
+                        const captionElement = document.getElementById(`caption-text-${videoId}`);
+                        if (captionElement) {
+                            captionElement.textContent = captionData.caption;
+                        }
+                    }
+                });
+                console.log('🔄 캡션 업데이트');
+            });
+        }
+
+        // 🎯 초기화 함수
+        async function init() {
+            console.log('🚀 앱 초기화...');
+            videos = [...sampleVideos];
+            
+            // Firebase 연결 대기
+            let retryCount = 0;
+            while (!window.firebaseReady && retryCount < 10) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                retryCount++;
+            }
+            
+            if (!window.firebaseReady) {
+                showMessage('Firebase 연결에 실패했습니다.', 'error');
+                return;
+            }
+            
+            // Firebase 전역 변수 설정
+            db = window.db;
+            firestore = window.firestore;
+            
+            await loadData();
+            setupRealtimeListeners();
+            generateVideoGrid();
+            updateResults();
+            
+            // 로딩 완료
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('voting-tab').classList.remove('hidden');
+            
+            console.log('🎉 초기화 완료!');
+        }
+
         // 페이지 로드 시 초기화
-        window.addEventListener('load', init);
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, doc, setDoc, getDocs, onSnapshot, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA0B8G1jHsnLkwZC4flHWKM0-6lzdU073E",
+            authDomain: "reels-cup2.firebaseapp.com",
+            databaseURL: "https://reels-cup2-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "reels-cup2",
+            storageBucket: "reels-cup2.firebasestorage.app",
+            messagingSenderId: "139476452384",
+            appId: "1:139476452384:web:cc36950a9096df7113e845"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.db = db;
+        window.firestore = { collection, doc, setDoc, getDocs, onSnapshot, deleteDoc };
+        window.firebaseReady = true;
+        
+        console.log('🔥 Firebase 초기화 완료');
     </script>
 </body>
 </html>
