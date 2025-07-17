@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>릴스컵 투표</title>
+    <title>릴스 영상 투표 시스템</title>
     <style>
         * {
             margin: 0;
@@ -12,254 +12,757 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #f0f2f5;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            padding: 20px;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            overflow: hidden;
         }
 
         .header {
-            text-align: center;
-            margin-bottom: 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
             color: white;
             padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
         }
 
         .header h1 {
             font-size: 2.5em;
             margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
         }
 
-        .auth-section {
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .tab-container {
+            background: #f8f9fa;
+            padding: 0;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
             background: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            text-align: center;
         }
 
-        .auth-section input {
-            padding: 10px 15px;
-            margin: 5px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-
-        .auth-section button {
-            padding: 10px 20px;
-            margin: 5px;
-            border: none;
-            border-radius: 5px;
-            background: #4CAF50;
-            color: white;
-            font-size: 16px;
+        .tab {
+            padding: 20px 40px;
             cursor: pointer;
-            transition: all 0.3s;
+            background: #f8f9fa;
+            border: none;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s ease;
+            border-radius: 15px 15px 0 0;
+            margin: 0 5px;
         }
 
-        .auth-section button:hover {
-            background: #45a049;
+        .tab.active {
+            background: white;
+            color: #495057;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
+        }
+
+        .tab:hover {
+            background: #e9ecef;
             transform: translateY(-2px);
         }
 
-        .user-info {
-            margin-top: 10px;
-            font-size: 18px;
-            color: #333;
+        .tab.active:hover {
+            background: white;
         }
 
-        .videos-grid {
+        .content {
+            padding: 40px;
+        }
+
+        .video-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            gap: 25px;
+            margin-bottom: 40px;
         }
 
         .video-card {
             background: white;
-            border-radius: 10px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
             overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
         }
 
         .video-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
         }
 
-        .video-header {
-            padding: 15px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #eee;
-        }
-
-        .nickname {
-            font-weight: bold;
-            font-size: 18px;
-            color: #333;
-        }
-
-        .video-container {
-            position: relative;
-            padding-bottom: 177.78%; /* 9:16 aspect ratio */
-            height: 0;
+        .video-placeholder {
+            width: 100%;
+            height: 250px;
+            border-radius: 10px;
             overflow: hidden;
-            background: #000;
+            position: relative;
         }
 
-        .video-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
+        .youtube-embed {
             width: 100%;
             height: 100%;
+            border: none;
+            border-radius: 10px;
         }
 
-        .caption-section {
+        .video-info {
             padding: 15px;
         }
 
-        .caption {
+        .video-title {
+            font-size: 1.2em;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #2d3436;
+            text-align: center;
+            padding: 5px;
+            background: linear-gradient(135deg, #ff9a9e, #fecfef);
+            border-radius: 8px;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .video-caption {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #ff6b6b;
+            position: relative;
+        }
+
+        .caption-display {
+            color: #495057;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 0.95em;
+        }
+
+        .caption-edit-area {
             width: 100%;
             min-height: 80px;
             padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
             resize: vertical;
             font-family: inherit;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+
+        .caption-edit-area:focus {
+            outline: none;
+            border-color: #ff6b6b;
+        }
+
+        .caption-controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            justify-content: flex-end;
+        }
+
+        .caption-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .edit-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .edit-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(118, 75, 162, 0.3);
+        }
+
+        .save-btn {
+            background: linear-gradient(135deg, #00b894, #00a085);
+            color: white;
+        }
+
+        .save-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0, 184, 148, 0.3);
+        }
+
+        .cancel-btn {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .cancel-btn:hover {
+            background: #7f8c8d;
+            transform: translateY(-1px);
+        }
+
+        .caption-edit-mode {
+            display: none;
+        }
+
+        .caption-edit-mode.active {
+            display: block;
+        }
+
+        .caption-display-mode.editing {
+            display: none;
+        }
+
+        .vote-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .vote-checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            background: white;
+            user-select: none;
+        }
+
+        .vote-checkbox-container:hover {
+            border-color: #ff6b6b;
+            background: #fff5f5;
+            transform: translateY(-2px);
+        }
+
+        .vote-checkbox-container.selected {
+            border-color: #ff6b6b;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .vote-checkbox {
+            display: none;
+        }
+
+        .checkmark {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .vote-checkbox-container.selected .checkmark {
+            background: white;
+            border-color: white;
+        }
+
+        .vote-checkbox-container.selected .checkmark::after {
+            content: '✓';
+            color: #ff6b6b;
+            font-weight: bold;
             font-size: 14px;
         }
 
-        .vote-button {
-            width: 100%;
-            padding: 12px;
-            margin-top: 10px;
-            border: none;
-            border-radius: 5px;
-            background: #2196F3;
+        .vote-text {
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .vote-counter {
+            background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .vote-button:hover {
-            background: #1976D2;
-        }
-
-        .vote-button.voted {
-            background: #4CAF50;
-        }
-
-        .vote-button.voted::after {
-            content: ' ✓';
-        }
-
-        .submit-section {
+            padding: 15px;
+            border-radius: 10px;
             text-align: center;
-            margin: 30px 0;
+            margin-bottom: 20px;
+            font-weight: 600;
+            font-size: 1.1em;
         }
 
-        .submit-button {
-            padding: 15px 40px;
-            font-size: 20px;
+        .vote-counter.limit-reached {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            animation: pulse-warning 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-warning {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .vote-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
             border: none;
             border-radius: 10px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
             cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            font-weight: 600;
+            transition: all 0.3s ease;
         }
 
-        .submit-button:hover:not(:disabled) {
+        .vote-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            box-shadow: 0 5px 15px rgba(238, 90, 36, 0.4);
         }
 
-        .submit-button:disabled {
-            background: #ccc;
+        .vote-btn:disabled {
+            background: #95a5a6;
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
-        .ranking-section {
-            background: white;
+        .voter-form {
+            background: linear-gradient(135deg, #a8edea, #fed6e3);
             padding: 30px;
             border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
         }
 
-        .ranking-title {
-            text-align: center;
-            font-size: 24px;
+        .voter-form h3 {
+            color: #2d3436;
             margin-bottom: 20px;
-            color: #333;
+            font-size: 1.5em;
         }
 
-        .ranking-list {
-            list-style: none;
+        .voter-form input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1.1em;
+            margin-bottom: 20px;
         }
 
-        .ranking-item {
+        .voter-form button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .voter-form button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4);
+        }
+
+        .results-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .result-item {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
             display: flex;
             align-items: center;
-            padding: 15px;
-            margin-bottom: 10px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            transition: all 0.3s;
+            gap: 20px;
+            transition: all 0.3s ease;
         }
 
-        .ranking-item:hover {
-            background: #e9ecef;
-            transform: translateX(5px);
+        .result-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
         }
 
-        .rank-number {
-            font-size: 24px;
+        .rank-badge {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
             font-weight: bold;
-            margin-right: 20px;
-            min-width: 40px;
-            color: #667eea;
+            color: white;
+            flex-shrink: 0;
         }
 
-        .rank-nickname {
+        .rank-1 { background: linear-gradient(135deg, #ffd700, #ffb300); }
+        .rank-2 { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); }
+        .rank-3 { background: linear-gradient(135deg, #cd7f32, #a0522d); }
+        .rank-other { background: linear-gradient(135deg, #6c757d, #495057); }
+
+        .result-info {
             flex: 1;
-            font-size: 18px;
         }
 
-        .rank-votes {
-            font-size: 20px;
+        .result-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #2d3436;
+            margin-bottom: 8px;
+        }
+
+        .result-score {
+            font-size: 1.1em;
+            color: #636e72;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #ee5a24);
+            transition: width 0.8s ease;
+        }
+
+        .current-voter {
+            background: linear-gradient(135deg, #00b894, #00a085);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 2.5em;
             font-weight: bold;
-            color: #764ba2;
+            color: #ff6b6b;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #636e72;
+            font-size: 1.1em;
+        }
+
+        /* 관리자 스타일 */
+        .admin-login-form {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+            margin: 0 auto;
+            color: white;
+        }
+
+        .admin-login-form h3 {
+            margin-bottom: 25px;
+            font-size: 1.5em;
+        }
+
+        .admin-login-form input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+
+        .admin-login-form button {
+            width: 100%;
+            padding: 15px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .admin-login-form button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 10px;
+            color: white;
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .admin-stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border-left: 5px solid #667eea;
+        }
+
+        .voter-details {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .voter-details h4 {
+            margin-bottom: 20px;
+            color: #2d3436;
+            font-size: 1.3em;
+        }
+
+        .voter-table-container {
+            overflow-x: auto;
+        }
+
+        .voter-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        .voter-table th,
+        .voter-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .voter-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .voter-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .selected-videos {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .video-tag {
+            background: linear-gradient(135deg, #ff9a9e, #fecfef);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .admin-actions {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .admin-actions h4 {
+            margin-bottom: 20px;
+            color: #2d3436;
+            font-size: 1.3em;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .danger-btn {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+        }
+
+        .danger-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #00b894, #00a085);
+            color: white;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 184, 148, 0.4);
+        }
+
+        .delete-voter-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.3s ease;
+        }
+
+        .delete-voter-btn:hover {
+            background: #ee5a24;
+            transform: translateY(-1px);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .error {
+            background: #ff6b6b;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .success {
+            background: #00b894;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
         }
 
         .loading {
             text-align: center;
-            padding: 20px;
-            font-size: 18px;
-            color: #666;
+            padding: 40px;
+            color: #667eea;
+            font-size: 1.2em;
         }
 
         @media (max-width: 768px) {
-            .videos-grid {
+            .video-grid {
                 grid-template-columns: 1fr;
             }
             
-            .header h1 {
-                font-size: 2em;
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                border-radius: 0;
+                margin: 0;
+            }
+            
+            .content {
+                padding: 20px;
             }
         }
     </style>
@@ -267,122 +770,714 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏆 릴스컵 투표 🏆</h1>
-            <p>좋아하는 릴스 5개를 선택해주세요!</p>
+            <h1>🎬 릴스 영상 투표 시스템</h1>
+            <p>15개의 릴스 영상을 보고 투표해주세요!</p>
         </div>
 
-        <div class="auth-section">
-            <div id="authForm">
-                <input type="text" id="nameInput" placeholder="이름을 입력하세요" required>
-                <button onclick="login()">입장하기</button>
-            </div>
-            <div id="userInfo" class="user-info" style="display: none;">
-                <span id="userName"></span>
-                <button onclick="logout()">나가기</button>
+        <div class="tab-container">
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('voting')">투표하기</button>
+                <button class="tab" onclick="showTab('results')">결과보기</button>
+                <button class="tab" onclick="showTab('admin')">관리자</button>
             </div>
         </div>
 
-        <div id="videosContainer" class="videos-grid"></div>
+        <div class="content">
+            <div id="loading" class="loading">
+                🔄 데이터를 불러오는 중...
+            </div>
 
-        <div class="submit-section">
-            <button id="submitButton" class="submit-button" disabled>
-                투표 제출하기 (0/5)
-            </button>
-        </div>
+            <!-- 투표 탭 -->
+            <div id="voting-tab" class="tab-content hidden">
+                <div class="voter-form">
+                    <h3>투표자 정보</h3>
+                    <input type="text" id="voter-name" placeholder="이름을 입력하세요">
+                    <button onclick="setVoter()">투표 시작</button>
+                </div>
 
-        <div class="ranking-section">
-            <h2 class="ranking-title">📊 실시간 순위</h2>
-            <ul id="rankingList" class="ranking-list">
-                <li class="loading">순위를 불러오는 중...</li>
-            </ul>
+                <div id="voting-section" class="hidden">
+                    <div class="current-voter" id="current-voter-display"></div>
+                    
+                    <div class="vote-counter" id="vote-counter">
+                        선택한 영상: 0/5 (최대 5개까지 선택 가능)
+                    </div>
+                    
+                    <div class="video-grid" id="video-grid">
+                        <!-- 비디오 카드들이 여기에 동적으로 생성됩니다 -->
+                    </div>
+
+                    <div style="text-align: center; margin-top: 30px;">
+                        <button class="vote-btn" id="submit-btn" onclick="submitAllVotes()" 
+                                style="padding: 15px 40px; font-size: 1.2em;" disabled>
+                            투표 제출 (0/5 선택)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 결과 탭 -->
+            <div id="results-tab" class="tab-content hidden">
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-votes">0</div>
+                        <div class="stat-label">총 투표수</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-voters">0</div>
+                        <div class="stat-label">참여자수</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="completion-rate">0%</div>
+                        <div class="stat-label">완료율</div>
+                    </div>
+                </div>
+
+                <div class="results-grid" id="results-grid">
+                    <!-- 결과가 여기에 동적으로 생성됩니다 -->
+                </div>
+            </div>
+
+            <!-- 관리자 탭 -->
+            <div id="admin-tab" class="tab-content hidden">
+                <div id="admin-login-section">
+                    <div class="admin-login-form">
+                        <h3>🔐 관리자 로그인</h3>
+                        <input type="text" id="admin-id" placeholder="관리자 ID">
+                        <input type="password" id="admin-password" placeholder="비밀번호">
+                        <button onclick="adminLogin()">로그인</button>
+                    </div>
+                </div>
+
+                <div id="admin-dashboard" class="hidden">
+                    <div class="admin-header">
+                        <h3>👨‍💼 관리자 대시보드</h3>
+                        <button class="logout-btn" onclick="adminLogout()">로그아웃</button>
+                    </div>
+
+                    <div class="admin-stats">
+                        <div class="admin-stat-card">
+                            <div class="stat-number" id="admin-total-voters">0</div>
+                            <div class="stat-label">총 투표자</div>
+                        </div>
+                        <div class="admin-stat-card">
+                            <div class="stat-number" id="admin-total-votes">0</div>
+                            <div class="stat-label">총 투표수</div>
+                        </div>
+                        <div class="admin-stat-card">
+                            <div class="stat-number" id="admin-avg-votes">0</div>
+                            <div class="stat-label">평균 선택수</div>
+                        </div>
+                    </div>
+
+                    <div class="voter-details">
+                        <h4>📊 투표자별 상세 정보</h4>
+                        <div class="voter-table-container">
+                            <table class="voter-table" id="voter-table">
+                                <thead>
+                                    <tr>
+                                        <th>투표자</th>
+                                        <th>선택한 영상수</th>
+                                        <th>선택한 영상</th>
+                                        <th>투표 시간</th>
+                                        <th>관리</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="voter-table-body">
+                                    <!-- 투표자 데이터가 여기에 표시됩니다 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="admin-actions">
+                        <h4>🛠️ 관리 기능</h4>
+                        <div class="action-buttons">
+                            <button class="action-btn danger-btn" onclick="clearAllVotes()">
+                                🗑️ 모든 투표 삭제
+                            </button>
+                            <button class="action-btn export-btn" onclick="exportData()">
+                                📊 데이터 내보내기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- Firebase SDK (초심플 버전) -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { 
-            getFirestore, 
-            doc, 
-            setDoc, 
-            getDoc, 
-            updateDoc, 
-            onSnapshot,
-            collection,
-            query
-        } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, doc, setDoc, getDocs, onSnapshot, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
-        // Firebase configuration
+        // 🔥 Firebase 구성 (실제 연동!)
         const firebaseConfig = {
-            apiKey: "AIzaSyBmxLEvOtqHqSyAUXtdYWlywvP1wgsQ_yk",
-            authDomain: "reels-8708b.firebaseapp.com",
-            projectId: "reels-8708b",
-            storageBucket: "reels-8708b.firebasestorage.app",
-            messagingSenderId: "614276576588",
-            appId: "1:614276576588:web:1fab02cbc30615e69f0be9"
+            apiKey: "AIzaSyA0B8G1jHsnLkwZC4flHWKM0-6lzdU073E",
+            authDomain: "reels-cup2.firebaseapp.com",
+            databaseURL: "https://reels-cup2-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "reels-cup2",
+            storageBucket: "reels-cup2.firebasestorage.app",
+            messagingSenderId: "139476452384",
+            appId: "1:139476452384:web:cc36950a9096df7113e845"
         };
 
-        // Initialize Firebase
+        // Firebase 초기화
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Video data
-        const videos = [
-            { nickname: "호롤롤로", url: "https://youtube.com/shorts/-8dDe_EbKEk?feature=share", id: "video1" },
-            { nickname: "핑핑", url: "https://youtube.com/shorts/yahAVfaT5zs?feature=share", id: "video2" },
-            { nickname: "으악", url: "https://youtube.com/shorts/hNtdL1RtyQY?feature=share", id: "video3" },
-            { nickname: "도우너", url: "https://youtube.com/shorts/RtWbEDm4GvQ?feature=share", id: "video4" },
-            { nickname: "플래닛성형외과의원", url: "https://youtube.com/shorts/ZNFc-2Bk86g?feature=share", id: "video5" },
-            { nickname: "호로롤롤로", url: "https://youtube.com/shorts/VCStJdILfwQ?feature=share", id: "video6" },
-            { nickname: "키키", url: "https://youtube.com/shorts/j5jRH9u583w?feature=share", id: "video7" },
-            { nickname: "아이고아이고", url: "https://youtube.com/shorts/fBfsdIgHW0Q?feature=share", id: "video8" },
-            { nickname: "라임", url: "https://youtube.com/shorts/GEOQGCJilYI?feature=share", id: "video9" },
-            { nickname: "힝힝", url: "https://youtube.com/shorts/RY60ZC9QyF8?feature=share", id: "video10" },
-            { nickname: "삡", url: "https://youtube.com/shorts/0Luy2181QMQ?feature=share", id: "video11" },
-            { nickname: "훌랄라", url: "https://youtube.com/shorts/8VDydtUJV5s?feature=share", id: "video12" },
-            { nickname: "길구몽구봉구", url: "https://youtube.com/shorts/fDaON3vG4uI?feature=share", id: "video13" },
-            { nickname: "떡순이", url: "https://youtube.com/shorts/_qCY3j2RLgs?feature=share", id: "video14" },
-            { nickname: "쥬라기", url: "https://youtube.com/shorts/RyVTjCFWHlU?feature=share", id: "video15" }
+        // 전역으로 Firebase 노출 (초심플!)
+        window.db = db;
+        window.firestore = { collection, doc, setDoc, getDocs, onSnapshot, deleteDoc };
+        window.firebaseReady = true;
+        
+        console.log('🔥 Firebase 초기화 완료');
+    </script>
+
+    <script>
+        // 전역 변수
+        let currentVoter = '';
+        let videos = [];
+        let votes = {};
+        let allVotes = [];
+        let isAdminLoggedIn = false;
+
+        // 관리자 계정
+        const ADMIN_CREDENTIALS = {
+            id: 'admin',
+            password: 'admin123'
+        };
+
+        // 15개의 유튜브 쇼츠 영상 데이터 (기본 캡션 포함)
+        const sampleVideos = [
+            { id: 1, title: '호롤롤로', youtubeId: '-8dDe_EbKEk', caption: '재미있는 영상입니다!' },
+            { id: 2, title: '핑핑', youtubeId: 'yahAVfaT5zs', caption: '정말 멋진 영상이에요' },
+            { id: 3, title: '으악', youtubeId: 'hNtdL1RtyQY', caption: '놀라운 순간들이 담겨있어요' },
+            { id: 4, title: '도우너', youtubeId: 'RtWbEDm4GvQ', caption: '힐링되는 영상입니다' },
+            { id: 5, title: '플래닛성형외과의원', youtubeId: 'ZNFc-2Bk86g', caption: '전문적인 내용을 쉽게 설명해요' },
+            { id: 6, title: '호로롤롤로', youtubeId: 'VCStJdILfwQ', caption: '유쾌한 에너지가 느껴져요' },
+            { id: 7, title: '키키', youtubeId: 'j5jRH9u583w', caption: '귀여운 모습이 인상적이에요' },
+            { id: 8, title: '아이고아이고', youtubeId: 'fBfsdIgHW0Q', caption: '웃음이 절로 나와요' },
+            { id: 9, title: '라임', youtubeId: 'GEOQGCJilYI', caption: '상큼한 매력이 있어요' },
+            { id: 10, title: '힝힝', youtubeId: 'RY60ZC9QyF8', caption: '감동적인 스토리입니다' },
+            { id: 11, title: '삡', youtubeId: '0Luy2181QMQ', caption: '짧지만 임팩트 있어요' },
+            { id: 12, title: '훌랄라', youtubeId: '8VDydtUJV5s', caption: '신나는 분위기의 영상이에요' },
+            { id: 13, title: '길구몽구봉구', youtubeId: 'fDaON3vG4uI', caption: '독특한 아이디어가 돋보여요' },
+            { id: 14, title: '떡순이', youtubeId: '_qCY3j2RLgs', caption: '달콤한 느낌의 영상입니다' },
+            { id: 15, title: '쥬라기', youtubeId: 'RyVTjCFWHlU', caption: '스릴 넘치는 순간들이 있어요' }
         ];
 
-        let currentUser = null;
-        let selectedVideos = new Set();
-        let votesData = {};
+        // 🔥 Firebase 초심플 함수들
 
-        // Make functions globally available
-        window.login = login;
-        window.logout = logout;
-        window.toggleVote = toggleVote;
-        window.submitVotes = submitVotes;
-        window.updateCaption = updateCaption;
+        // 캡션 저장 (초심플!)
+        async function saveCaption(videoId) {
+            const newCaption = document.getElementById(`caption-input-${videoId}`).value.trim();
+            
+            try {
+                // Firebase에 캡션 저장 (영상별로 하나씩, 모든 사용자 공유)
+                await window.firestore.setDoc(window.firestore.doc(window.db, 'captions', videoId.toString()), {
+                    caption: newCaption,
+                    lastUpdated: new Date().toISOString()
+                });
 
-        // Simple login with name only
-        async function login() { /* ... unchanged ... */ }
-        function logout() { /* ... unchanged ... */ }
-        function updateUI() { /* ... unchanged ... */ }
-        function renderVideos() { /* ... unchanged ... */ }
-        function extractVideoId(url) { /* ... unchanged ... */ }
-        async function toggleVote(videoId) { /* ... unchanged ... */ }
-        function updateSubmitButton() { /* ... unchanged ... */ }
-        async function updateCaption(videoId) { /* ... unchanged ... */ }
-        async function submitVotes() { /* ... unchanged ... */ }
-        async function loadUserVotes() { /* ... unchanged ... */ }
-        function setupRealtimeListeners() { /* ... unchanged ... */ }
-        function updateRanking() { /* ... unchanged ... */ }
-
-        // Initialize ranking on load
-        updateRanking();
-
-        window.addEventListener('load', () => {
-            const submitBtn = document.getElementById('submitButton');
-            submitBtn.addEventListener('click', submitVotes);
-        });
-
-        // Allow Enter key to login
-        document.getElementById('nameInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                login();
+                // 로컬에도 업데이트
+                const video = videos.find(v => v.id === videoId);
+                if (video) video.caption = newCaption;
+                
+                // 화면 업데이트
+                document.getElementById(`caption-text-${videoId}`).textContent = newCaption;
+                cancelEdit(videoId);
+                
+                showMessage('캡션이 저장되었습니다!', 'success');
+                console.log('✅ 캡션 저장:', videoId, newCaption);
+                
+            } catch (error) {
+                console.error('❌ 캡션 저장 실패:', error);
+                showMessage('캡션 저장에 실패했습니다.', 'error');
             }
-        });
+        }
+
+        // 투표 저장 (초심플!)
+        async function submitAllVotes() {
+            const selectedCount = Object.keys(votes).length;
+            
+            if (selectedCount === 0) {
+                showMessage('최소 1개의 영상을 선택해주세요.', 'error');
+                return;
+            }
+
+            try {
+                // Firebase에 투표 저장 (사용자 이름을 키로 사용)
+                await window.firestore.setDoc(window.firestore.doc(window.db, 'votes', currentVoter), {
+                    voter: currentVoter,
+                    votes: votes,
+                    selectedCount: selectedCount,
+                    timestamp: new Date().toISOString()
+                });
+
+                showMessage(`${selectedCount}개의 영상에 투표가 완료되었습니다!`, 'success');
+                console.log('✅ 투표 저장:', currentVoter, votes);
+                
+                // 투표 완료 후 처리
+                document.getElementById('voting-section').classList.add('hidden');
+                document.querySelector('.voter-form').style.display = 'block';
+                document.getElementById('voter-name').value = '';
+                
+                // 결과 탭으로 이동
+                showTab('results');
+                
+            } catch (error) {
+                console.error('❌ 투표 저장 실패:', error);
+                showMessage('투표 저장에 실패했습니다.', 'error');
+            }
+        }
+
+        // 데이터 로드 (초심플!)
+        async function loadData() {
+            try {
+                console.log('📥 데이터 로드 시작...');
+                
+                // 캡션 로드 (모든 사용자 공유)
+                const captionsSnapshot = await window.firestore.getDocs(window.firestore.collection(window.db, 'captions'));
+                captionsSnapshot.forEach(doc => {
+                    const videoId = parseInt(doc.id);
+                    const captionData = doc.data();
+                    const video = videos.find(v => v.id === videoId);
+                    if (video) {
+                        video.caption = captionData.caption;
+                    }
+                });
+
+                // 투표 로드
+                const votesSnapshot = await window.firestore.getDocs(window.firestore.collection(window.db, 'votes'));
+                allVotes = [];
+                votesSnapshot.forEach(doc => {
+                    allVotes.push(doc.data());
+                });
+
+                console.log('✅ 데이터 로드 완료:', allVotes.length, '개 투표');
+                
+            } catch (error) {
+                console.error('❌ 데이터 로드 실패:', error);
+                showMessage('데이터 로드에 실패했습니다.', 'error');
+            }
+        }
+
+        // 실시간 리스너 (초심플!)
+        function setupRealtimeListeners() {
+            console.log('🔄 실시간 리스너 설정...');
+            
+            // 투표 실시간 업데이트
+            window.firestore.onSnapshot(window.firestore.collection(window.db, 'votes'), (snapshot) => {
+                allVotes = [];
+                snapshot.forEach(doc => allVotes.push(doc.data()));
+                updateResults();
+                if (isAdminLoggedIn) updateAdminDashboard();
+                console.log('🔄 투표 업데이트:', allVotes.length, '개');
+            });
+
+            // 캡션 실시간 업데이트 (모든 사용자에게 동일하게 보임)
+            window.firestore.onSnapshot(window.firestore.collection(window.db, 'captions'), (snapshot) => {
+                snapshot.forEach(doc => {
+                    const videoId = parseInt(doc.id);
+                    const captionData = doc.data();
+                    const video = videos.find(v => v.id === videoId);
+                    
+                    if (video && video.caption !== captionData.caption) {
+                        video.caption = captionData.caption;
+                        // 화면에 실시간 반영
+                        const captionElement = document.getElementById(`caption-text-${videoId}`);
+                        if (captionElement) {
+                            captionElement.textContent = captionData.caption;
+                        }
+                    }
+                });
+                console.log('🔄 캡션 업데이트');
+            });
+        }
+
+        // 관리자 - 투표자 삭제 (초심플!)
+        async function deleteVoter(index) {
+            if (confirm('이 투표자의 데이터를 삭제하시겠습니까?')) {
+                try {
+                    const voterName = allVotes[index].voter;
+                    await window.firestore.deleteDoc(window.firestore.doc(window.db, 'votes', voterName));
+                    showMessage(`${voterName}의 투표가 삭제되었습니다.`, 'success');
+                    console.log('✅ 투표자 삭제:', voterName);
+                } catch (error) {
+                    console.error('❌ 삭제 실패:', error);
+                    showMessage('삭제에 실패했습니다.', 'error');
+                }
+            }
+        }
+
+        // 관리자 - 모든 투표 삭제 (초심플!)
+        async function clearAllVotes() {
+            if (confirm('정말로 모든 투표 데이터를 삭제하시겠습니까?')) {
+                try {
+                    const votesSnapshot = await window.firestore.getDocs(window.firestore.collection(window.db, 'votes'));
+                    const deletePromises = votesSnapshot.docs.map(doc => window.firestore.deleteDoc(doc.ref));
+                    await Promise.all(deletePromises);
+                    showMessage('모든 투표 데이터가 삭제되었습니다.', 'success');
+                    console.log('✅ 전체 투표 삭제 완료');
+                } catch (error) {
+                    console.error('❌ 전체 삭제 실패:', error);
+                    showMessage('삭제에 실패했습니다.', 'error');
+                }
+            }
+        }
+
+        // 🎯 나머지 기존 함수들 (변경 없음)
+
+        async function init() {
+            console.log('🚀 앱 초기화...');
+            videos = [...sampleVideos];
+            
+            // Firebase 준비 확인
+            if (window.firebaseReady) {
+                await loadData();
+                setupRealtimeListeners();
+            } else {
+                setTimeout(init, 500);
+                return;
+            }
+            
+            generateVideoGrid();
+            updateResults();
+            
+            // 로딩 완료
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('voting-tab').classList.remove('hidden');
+            
+            console.log('🎉 초기화 완료!');
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.getElementById(tabName + '-tab').classList.remove('hidden');
+            
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            
+            // 해당 탭 버튼 찾아서 활성화
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach((tab, index) => {
+                if ((tabName === 'voting' && index === 0) ||
+                    (tabName === 'results' && index === 1) ||
+                    (tabName === 'admin' && index === 2)) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            if (tabName === 'results') updateResults();
+            if (tabName === 'admin' && isAdminLoggedIn) updateAdminDashboard();
+        }
+
+        function setVoter() {
+            const name = document.getElementById('voter-name').value.trim();
+            if (!name) {
+                showMessage('이름을 입력해주세요.', 'error');
+                return;
+            }
+
+            // 중복 투표 확인
+            const existingVoter = allVotes.find(vote => vote.voter === name);
+            if (existingVoter) {
+                showMessage('이미 투표에 참여한 사용자입니다.', 'error');
+                return;
+            }
+
+            currentVoter = name;
+            document.getElementById('current-voter-display').textContent = `투표자: ${name}`;
+            document.getElementById('voting-section').classList.remove('hidden');
+            document.querySelector('.voter-form').style.display = 'none';
+            
+            votes = {};
+            updateVoteInputs();
+            showMessage('투표를 시작합니다!', 'success');
+        }
+
+        function generateVideoGrid() {
+            const grid = document.getElementById('video-grid');
+            grid.innerHTML = '';
+
+            videos.forEach(video => {
+                const card = document.createElement('div');
+                card.className = 'video-card';
+                card.innerHTML = `
+                    <div class="video-placeholder">
+                        <iframe class="youtube-embed" 
+                                src="https://www.youtube.com/embed/${video.youtubeId}" 
+                                title="${video.title}" 
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="video-info">
+                        <div class="video-title">${video.title}</div>
+                        
+                        <div class="video-caption">
+                            <div class="caption-display-mode" id="caption-display-${video.id}">
+                                <div class="caption-display" id="caption-text-${video.id}">${video.caption}</div>
+                                <div class="caption-controls">
+                                    <button class="caption-btn edit-btn" onclick="editCaption(${video.id})">
+                                        ✏️ 수정
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="caption-edit-mode" id="caption-edit-${video.id}">
+                                <textarea class="caption-edit-area" id="caption-input-${video.id}" 
+                                          placeholder="캡션을 입력하세요...">${video.caption}</textarea>
+                                <div class="caption-controls">
+                                    <button class="caption-btn save-btn" onclick="saveCaption(${video.id})">
+                                        💾 저장
+                                    </button>
+                                    <button class="caption-btn cancel-btn" onclick="cancelEdit(${video.id})">
+                                        ❌ 취소
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="vote-section">
+                            <label class="vote-checkbox-container" onclick="toggleVote(${video.id})">
+                                <input type="checkbox" class="vote-checkbox" id="vote-${video.id}">
+                                <span class="checkmark"></span>
+                                <span class="vote-text">이 영상에 투표하기</span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function editCaption(videoId) {
+            document.getElementById(`caption-display-${videoId}`).classList.add('editing');
+            document.getElementById(`caption-edit-${videoId}`).classList.add('active');
+            const textarea = document.getElementById(`caption-input-${videoId}`);
+            textarea.focus();
+        }
+
+        function cancelEdit(videoId) {
+            document.getElementById(`caption-display-${videoId}`).classList.remove('editing');
+            document.getElementById(`caption-edit-${videoId}`).classList.remove('active');
+            const video = videos.find(v => v.id === videoId);
+            if (video) {
+                document.getElementById(`caption-input-${videoId}`).value = video.caption;
+            }
+        }
+
+        function toggleVote(videoId) {
+            const container = document.querySelector(`#vote-${videoId}`).parentElement;
+            const checkbox = document.getElementById(`vote-${videoId}`);
+            
+            if (checkbox.checked) {
+                checkbox.checked = false;
+                container.classList.remove('selected');
+                delete votes[videoId];
+            } else {
+                if (Object.keys(votes).length >= 5) {
+                    showMessage('최대 5개의 영상만 선택할 수 있습니다.', 'error');
+                    return;
+                }
+                checkbox.checked = true;
+                container.classList.add('selected');
+                votes[videoId] = true;
+            }
+            updateVoteCounter();
+        }
+
+        function updateVoteCounter() {
+            const selectedCount = Object.keys(votes).length;
+            document.getElementById('vote-counter').textContent = `선택한 영상: ${selectedCount}/5 (최대 5개까지 선택 가능)`;
+            document.getElementById('submit-btn').textContent = `투표 제출 (${selectedCount}/5 선택)`;
+            
+            if (selectedCount >= 5) {
+                document.getElementById('vote-counter').classList.add('limit-reached');
+            } else {
+                document.getElementById('vote-counter').classList.remove('limit-reached');
+            }
+            
+            document.getElementById('submit-btn').disabled = selectedCount === 0;
+        }
+
+        function updateVoteInputs() {
+            videos.forEach(video => {
+                const checkbox = document.getElementById(`vote-${video.id}`);
+                const container = checkbox.parentElement;
+                checkbox.checked = false;
+                container.classList.remove('selected');
+            });
+            updateVoteCounter();
+        }
+
+        function updateResults() {
+            const resultsGrid = document.getElementById('results-grid');
+            resultsGrid.innerHTML = '';
+
+            if (allVotes.length === 0) {
+                resultsGrid.innerHTML = '<div style="text-align: center; padding: 40px; color: #636e72;">아직 투표 결과가 없습니다.</div>';
+                updateStats();
+                return;
+            }
+
+            const videoScores = videos.map(video => {
+                const videoVotes = allVotes.filter(vote => vote.votes[video.id]);
+                return {
+                    id: video.id,
+                    title: video.title,
+                    totalVotes: videoVotes.length,
+                    percentage: allVotes.length > 0 ? (videoVotes.length / allVotes.length * 100).toFixed(1) : 0
+                };
+            });
+
+            videoScores.sort((a, b) => b.totalVotes - a.totalVotes);
+            const maxVotes = Math.max(...videoScores.map(v => v.totalVotes), 1);
+
+            videoScores.forEach((video, index) => {
+                const rank = index + 1;
+                const progressWidth = (video.totalVotes / maxVotes) * 100;
+                
+                const resultItem = document.createElement('div');
+                resultItem.className = 'result-item';
+                resultItem.innerHTML = `
+                    <div class="rank-badge ${getRankClass(rank)}">${rank}</div>
+                    <div class="result-info">
+                        <div class="result-title">${video.title}</div>
+                        <div class="result-score">총 ${video.totalVotes}표 (${video.percentage}%)</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${progressWidth}%"></div>
+                        </div>
+                    </div>
+                `;
+                resultsGrid.appendChild(resultItem);
+            });
+
+            updateStats();
+        }
+
+        function getRankClass(rank) {
+            if (rank === 1) return 'rank-1';
+            if (rank === 2) return 'rank-2';
+            if (rank === 3) return 'rank-3';
+            return 'rank-other';
+        }
+
+        function updateStats() {
+            const totalVotes = allVotes.length;
+            document.getElementById('total-votes').textContent = totalVotes;
+            document.getElementById('total-voters').textContent = totalVotes;
+            document.getElementById('completion-rate').textContent = ((totalVotes / 50) * 100).toFixed(1) + '%';
+        }
+
+        function adminLogin() {
+            const inputId = document.getElementById('admin-id').value.trim();
+            const inputPassword = document.getElementById('admin-password').value.trim();
+            
+            if (inputId === ADMIN_CREDENTIALS.id && inputPassword === ADMIN_CREDENTIALS.password) {
+                isAdminLoggedIn = true;
+                document.getElementById('admin-login-section').classList.add('hidden');
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                updateAdminDashboard();
+                showMessage('관리자 로그인 성공!', 'success');
+            } else {
+                showMessage('아이디 또는 비밀번호가 잘못되었습니다.', 'error');
+            }
+        }
+
+        function adminLogout() {
+            isAdminLoggedIn = false;
+            document.getElementById('admin-login-section').classList.remove('hidden');
+            document.getElementById('admin-dashboard').classList.add('hidden');
+            document.getElementById('admin-id').value = '';
+            document.getElementById('admin-password').value = '';
+            showMessage('로그아웃되었습니다.', 'success');
+        }
+
+        function updateAdminDashboard() {
+            const totalVoters = allVotes.length;
+            const totalVotesCount = allVotes.reduce((sum, vote) => sum + vote.selectedCount, 0);
+            const avgVotes = totalVoters > 0 ? (totalVotesCount / totalVoters).toFixed(1) : 0;
+            
+            document.getElementById('admin-total-voters').textContent = totalVoters;
+            document.getElementById('admin-total-votes').textContent = totalVotesCount;
+            document.getElementById('admin-avg-votes').textContent = avgVotes;
+            
+            updateVoterTable();
+        }
+
+        function updateVoterTable() {
+            const tableBody = document.getElementById('voter-table-body');
+            tableBody.innerHTML = '';
+            
+            if (allVotes.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #636e72;">아직 투표 데이터가 없습니다.</td></tr>';
+                return;
+            }
+            
+            allVotes.forEach((voteData, index) => {
+                const selectedVideos = Object.keys(voteData.votes);
+                const videoTitles = selectedVideos.map(videoId => {
+                    const video = videos.find(v => v.id == videoId);
+                    return video ? video.title : `영상${videoId}`;
+                });
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="font-weight: 600;">${voteData.voter}</td>
+                    <td>${voteData.selectedCount}개</td>
+                    <td>
+                        <div class="selected-videos">
+                            ${videoTitles.map(title => `<span class="video-tag">${title}</span>`).join('')}
+                        </div>
+                    </td>
+                    <td>${new Date(voteData.timestamp).toLocaleString('ko-KR')}</td>
+                    <td>
+                        <button class="delete-voter-btn" onclick="deleteVoter(${index})">삭제</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function exportData() {
+            const exportData = {
+                timestamp: new Date().toISOString(),
+                totalVoters: allVotes.length,
+                votes: allVotes,
+                videoData: videos
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `vote_data_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            showMessage('데이터가 내보내기되었습니다!', 'success');
+        }
+
+        function showMessage(message, type) {
+            const existingMessage = document.querySelector('.error, .success');
+            if (existingMessage) existingMessage.remove();
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type;
+            messageDiv.textContent = message;
+            
+            const content = document.querySelector('.content');
+            content.insertBefore(messageDiv, content.firstChild);
+
+            setTimeout(() => messageDiv.remove(), 3000);
+        }
+
+        // 페이지 로드 시 초기화
+        window.addEventListener('load', init);
     </script>
 </body>
 </html>
