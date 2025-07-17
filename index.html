@@ -1128,6 +1128,33 @@
             }
         }
 
+// 🎯 전역 함수들을 먼저 정의
+
+// 탭 전환 함수 (전역 스코프에 먼저 정의)
+function showTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+    document.getElementById(tabName + '-tab').classList.remove('hidden');
+    
+    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+    
+    // 해당 탭 버튼 찾아서 활성화
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach((tab, index) => {
+        if ((tabName === 'voting' && index === 0) ||
+            (tabName === 'results' && index === 1) ||
+            (tabName === 'admin' && index === 2)) {
+            tab.classList.add('active');
+        }
+    });
+    
+    if (tabName === 'results') updateResults();
+    if (tabName === 'admin' && isAdminLoggedIn) updateAdminDashboard();
+}
+
+// 전역으로 노출
+window.showTab = showTab;
+
+
         // 🎯 나머지 기존 함수들 (변경 없음)
 
         async function init() {
@@ -1151,26 +1178,6 @@
             document.getElementById('voting-tab').classList.remove('hidden');
             
             console.log('🎉 초기화 완료!');
-        }
-
-        function showTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
-            document.getElementById(tabName + '-tab').classList.remove('hidden');
-            
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            
-            // 해당 탭 버튼 찾아서 활성화
-            const tabs = document.querySelectorAll('.tab');
-            tabs.forEach((tab, index) => {
-                if ((tabName === 'voting' && index === 0) ||
-                    (tabName === 'results' && index === 1) ||
-                    (tabName === 'admin' && index === 2)) {
-                    tab.classList.add('active');
-                }
-            });
-            
-            if (tabName === 'results') updateResults();
-            if (tabName === 'admin' && isAdminLoggedIn) updateAdminDashboard();
         }
 
         function setVoter() {
